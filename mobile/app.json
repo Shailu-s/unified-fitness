@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "uni-fit",
+    "slug": "uni-fit",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.ritik.unifiedfitness"
+    },
+    "android": {
+      "package": "com.ritik.unifiedfitness",
+      "predictiveBackGestureEnabled": false
+    }
+  }
+}

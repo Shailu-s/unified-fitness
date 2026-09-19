@@ -1,3 +1,13 @@
 .DS_Store
 .claude/settings.local.json
 node_modules/
+
+# Expo / React Native
+.expo/
+dist/
+web-build/
+*.jks
+*.p8
+*.p12
+*.mobileprovision
+*.orig.*
