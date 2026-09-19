@@ -1,8 +1,11 @@
 <title>Unified Fitness — Home</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+  rel="stylesheet"
+/>
 
 <style>
   /* ============================================================
@@ -14,53 +17,70 @@
        Warm paper, never pure white. Paper reflects; screens emit.
        A warm off-white keeps the "reading in daylight" calm and
        cuts the blue-glare fatigue of a #FFFFFF app.               */
-    --paper:    #FAF7F1;   /* app background     */
-    --paper-2:  #F4F0E8;   /* recessed / track   */
-    --card:     #FFFDF9;   /* raised card        */
-    --rule:     #E3DDD1;   /* hairlines, borders */
+    --paper: #faf7f1; /* app background     */
+    --paper-2: #f4f0e8; /* recessed / track   */
+    --card: #fffdf9; /* raised card        */
+    --rule: #e3ddd1; /* hairlines, borders */
 
     /* --- Ink: warm near-black, not #000 -------------------------
        Pure black on paper is harsh. E-ink reads as very dark brown. */
-    --ink:      #1F1B16;   /* primary numbers, headings */
-    --ink-mid:  #6B6459;   /* labels, secondary         */
-    --ink-low:  #9A9285;   /* units, hints, placeholder */
+    --ink: #1f1b16; /* primary numbers, headings */
+    --ink-mid: #6b6459; /* labels, secondary         */
+    --ink-low: #9a9285; /* units, hints, placeholder */
 
     /* --- Apple Activity ring colours ----------------------------
        Apple's actual palette, as requested.
        Move = pink/red, Exercise = green, Stand = cyan.             */
-    --move:     #FA114F;   /* Apple Move     — calories burned */
-    --exer:     #92E82A;   /* Apple Exercise — minutes         */
-    --stand:    #1AD7E5;   /* Apple Stand    — hours           */
+    --move: #fa114f; /* Apple Move     — calories burned */
+    --exer: #92e82a; /* Apple Exercise — minutes         */
+    --stand: #1ad7e5; /* Apple Stand    — hours           */
 
-    --steps:    #2E8B62;   /* forest green — steps box only */
+    --steps: #2e8b62; /* forest green — steps box only */
 
-    --ui:   'Inter', -apple-system, system-ui, sans-serif;
-    --mono: 'JetBrains Mono', ui-monospace, monospace;
+    --ui: "Inter", -apple-system, system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, monospace;
 
     --r-lg: 18px;
     --r-md: 12px;
     --r-sm: 9px;
   }
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
 
   body {
-    background: #E8E2D6;
+    background: #e8e2d6;
     font-family: var(--ui);
     color: var(--ink);
     -webkit-font-smoothing: antialiased;
-    display: flex; flex-direction: column; align-items: center;
-    gap: 26px; padding: 40px 20px 64px; min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 26px;
+    padding: 40px 20px 64px;
+    min-height: 100vh;
   }
 
   /* ---------- Review chrome (not part of the app) ---------- */
-  .sheet-head { text-align: center; max-width: 620px; }
+  .sheet-head {
+    text-align: center;
+    max-width: 620px;
+  }
   .sheet-head h1 {
-    font-size: 12px; font-weight: 600; letter-spacing: .14em;
-    text-transform: uppercase; color: var(--ink-mid);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-mid);
   }
   .sheet-head p {
-    margin-top: 7px; font-size: 13.5px; line-height: 1.6; color: var(--ink-low);
+    margin-top: 7px;
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--ink-low);
   }
 
   /* ---------- Phone ----------
@@ -75,18 +95,24 @@
     margin-bottom: 300px;
   }
   .phone {
-    width: 393px; max-width: 100%;
+    width: 393px;
+    max-width: 100%;
     height: 852px;
     background: var(--paper);
     border-radius: 46px;
-    border: 1px solid #D6CFC1;
-    padding: 14px 0 0; overflow: hidden;
-    box-shadow: 0 30px 60px -18px rgba(60,50,35,.28);
-    display: flex; flex-direction: column;
+    border: 1px solid #d6cfc1;
+    padding: 14px 0 0;
+    overflow: hidden;
+    box-shadow: 0 30px 60px -18px rgba(60, 50, 35, 0.28);
+    display: flex;
+    flex-direction: column;
   }
   .notch {
-    width: 100px; height: 5px; border-radius: 99px;
-    background: var(--rule); margin: 0 auto 22px;
+    width: 100px;
+    height: 5px;
+    border-radius: 99px;
+    background: var(--rule);
+    margin: 0 auto 22px;
   }
   /* ---------- Screen: an explicit vertical budget ----------
      393 x 852. The content column is a flex column that OWNS its
@@ -101,8 +127,14 @@
   }
   /* Elastic gaps: these absorb slack proportionally, so the layout
      breathes on a 6.7" screen and compresses on a 5.4" one.        */
-  .flex-1 { flex: 1 1 0; min-height: 14px; }
-  .flex-2 { flex: 1.4 1 0; min-height: 18px; }
+  .flex-1 {
+    flex: 1 1 0;
+    min-height: 14px;
+  }
+  .flex-2 {
+    flex: 1.4 1 0;
+    min-height: 18px;
+  }
 
   /* ---------- Bottom bar ----------
      Search lives in the thumb zone. On a 6.1" screen the top edge is
@@ -114,68 +146,109 @@
     border-top: 1px solid var(--rule);
   }
   .home-ind {
-    width: 128px; height: 5px; border-radius: 99px;
-    background: var(--rule); margin: 14px auto 0;
+    width: 128px;
+    height: 5px;
+    border-radius: 99px;
+    background: var(--rule);
+    margin: 14px auto 0;
   }
 
   /* ---------- Top row: date + avatar only. No greeting. -------- */
   .top {
-    display: flex; align-items: center; justify-content: space-between;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     flex-shrink: 0;
   }
   .date {
     font-family: var(--mono);
-    font-size: 11px; font-weight: 500; letter-spacing: .12em;
-    color: var(--ink-low); text-transform: uppercase;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    color: var(--ink-low);
+    text-transform: uppercase;
   }
   .avatar {
-    width: 34px; height: 34px; border-radius: 50%;
-    background: var(--paper-2); border: 1px solid var(--rule);
-    display: grid; place-items: center; flex-shrink: 0;
-    font-size: 12px; font-weight: 600; color: var(--ink-mid);
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--paper-2);
+    border: 1px solid var(--rule);
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-mid);
   }
 
   /* ---------- Search ---------- */
   .search {
-    display: flex; align-items: center; gap: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
     background: var(--card);
     border: 1px solid var(--rule);
     border-radius: var(--r-md);
-    padding: 14px 15px; cursor: text;
-    transition: border-color .18s ease, box-shadow .18s ease;
+    padding: 14px 15px;
+    cursor: text;
+    transition:
+      border-color 0.18s ease,
+      box-shadow 0.18s ease;
   }
-  .search:hover, .search:focus-within {
-    border-color: #CDC5B5;
-    box-shadow: 0 1px 3px rgba(60,50,35,.07);
+  .search:hover,
+  .search:focus-within {
+    border-color: #cdc5b5;
+    box-shadow: 0 1px 3px rgba(60, 50, 35, 0.07);
   }
-  .search svg { flex-shrink: 0; color: var(--ink-low); }
+  .search svg {
+    flex-shrink: 0;
+    color: var(--ink-low);
+  }
   .search input {
-    flex: 1; background: none; border: none; outline: none;
-    font-family: var(--ui); font-size: 15px; color: var(--ink);
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    font-family: var(--ui);
+    font-size: 15px;
+    color: var(--ink);
   }
-  .search input::placeholder { color: var(--ink-low); }
+  .search input::placeholder {
+    color: var(--ink-low);
+  }
 
   /* ---------- Steps: open line, no box ----------
      Sits above the ring on bare paper. No card, no border, no fill —
      it reads as a spoken fact rather than a widget.                */
   .steps-line {
-    display: flex; align-items: baseline; gap: 9px;
+    display: flex;
+    align-items: baseline;
+    gap: 9px;
     flex-shrink: 0;
   }
   .steps-line .n {
     font-family: var(--mono);
-    font-size: 30px; font-weight: 700; letter-spacing: -.04em;
-    font-variant-numeric: tabular-nums; line-height: 1;
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
     color: var(--ink);
   }
   .steps-line .g {
     font-family: var(--mono);
-    font-size: 15px; font-weight: 500; color: var(--ink-low);
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--ink-low);
     font-variant-numeric: tabular-nums;
   }
   .steps-line .l {
-    font-size: 10px; font-weight: 600; letter-spacing: .12em;
-    text-transform: uppercase; color: var(--ink-mid);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-mid);
     margin-left: auto;
   }
 
@@ -183,34 +256,56 @@
      Three concentric tracks, Apple-style. Center holds the number
      that matters most right now — active calories.                */
   .ring-wrap {
-    display: flex; justify-content: center;
+    display: flex;
+    justify-content: center;
     flex-shrink: 0;
   }
-  .ring { position: relative; width: 290px; height: 290px; }
-  .ring svg { transform: rotate(-90deg); }
-  .ring circle { fill: none; stroke-linecap: round; }
+  .ring {
+    position: relative;
+    width: 290px;
+    height: 290px;
+  }
+  .ring svg {
+    transform: rotate(-90deg);
+  }
+  .ring circle {
+    fill: none;
+    stroke-linecap: round;
+  }
 
   .ring-center {
-    position: absolute; inset: 0;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
   }
   /* Ring centre = BURNED only. One question: how much have I moved?
      Nothing about eating appears inside the ring.                  */
   .ring-num {
     font-family: var(--mono);
-    font-size: 52px; font-weight: 700; letter-spacing: -.045em;
-    font-variant-numeric: tabular-nums; line-height: 1;
+    font-size: 52px;
+    font-weight: 700;
+    letter-spacing: -0.045em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
     color: var(--move);
   }
   .ring-unit {
     font-family: var(--mono);
-    font-size: 9.5px; font-weight: 600; letter-spacing: .15em;
-    text-transform: uppercase; color: var(--ink-mid); margin-top: 9px;
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-mid);
+    margin-top: 9px;
   }
   .ring-goal {
     font-family: var(--mono);
-    font-size: 11px; color: var(--ink-low); margin-top: 4px;
+    font-size: 11px;
+    color: var(--ink-low);
+    margin-top: 4px;
     font-variant-numeric: tabular-nums;
   }
 
@@ -225,46 +320,92 @@
     margin-bottom: 10px;
   }
   .bal-row {
-    display: flex; align-items: baseline; justify-content: space-between;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
     gap: 10px;
   }
-  .bal-side { display: flex; flex-direction: column; gap: 4px; }
+  .bal-side {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
   .bal-label {
-    font-size: 9.5px; font-weight: 600; letter-spacing: .11em;
-    text-transform: uppercase; color: var(--ink-low);
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--ink-low);
   }
   .bal-num {
     font-family: var(--mono);
-    font-size: 19px; font-weight: 700; letter-spacing: -.035em;
-    font-variant-numeric: tabular-nums; line-height: 1;
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: -0.035em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
   }
   .bal-op {
-    font-family: var(--mono); font-size: 15px;
-    color: var(--ink-low); font-weight: 500;
-    align-self: center; padding-top: 12px;
+    font-family: var(--mono);
+    font-size: 15px;
+    color: var(--ink-low);
+    font-weight: 500;
+    align-self: center;
+    padding-top: 12px;
   }
-  .bal-net { text-align: right; }
-  .bal-net .bal-num { font-size: 23px; color: var(--steps); }
+  .bal-net {
+    text-align: right;
+  }
+  .bal-net .bal-num {
+    font-size: 23px;
+    color: var(--steps);
+  }
   .bal-bar {
-    height: 5px; border-radius: 99px; background: var(--paper-2);
-    margin-top: 13px; overflow: hidden; display: flex;
+    height: 5px;
+    border-radius: 99px;
+    background: var(--paper-2);
+    margin-top: 13px;
+    overflow: hidden;
+    display: flex;
   }
-  .bal-bar i { display: block; height: 100%; border-radius: 99px; }
+  .bal-bar i {
+    display: block;
+    height: 100%;
+    border-radius: 99px;
+  }
 
   /* Legend: three dots decode the three tracks. */
   .legend {
-    display: flex; justify-content: center; gap: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
     margin-bottom: 30px;
   }
-  .leg { display: flex; align-items: center; gap: 6px; }
-  .leg i { width: 7px; height: 7px; border-radius: 50%; display: block; }
+  .leg {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .leg i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    display: block;
+  }
   .leg span {
-    font-size: 10px; font-weight: 600; letter-spacing: .09em;
-    text-transform: uppercase; color: var(--ink-mid);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--ink-mid);
   }
 
   /* ---------- Steps: small box ---------- */
-  .row { display: flex; gap: 10px; flex-shrink: 0; }
+  .row {
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+  }
   .box {
     flex: 1;
     background: var(--card);
@@ -273,44 +414,86 @@
     padding: 13px 14px;
   }
   .box-label {
-    font-size: 9.5px; font-weight: 600; letter-spacing: .11em;
-    text-transform: uppercase; color: var(--ink-low);
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--ink-low);
   }
   .box-num {
     font-family: var(--mono);
-    font-size: 21px; font-weight: 700; letter-spacing: -.035em;
-    font-variant-numeric: tabular-nums; margin-top: 6px; line-height: 1;
+    font-size: 21px;
+    font-weight: 700;
+    letter-spacing: -0.035em;
+    font-variant-numeric: tabular-nums;
+    margin-top: 6px;
+    line-height: 1;
   }
   .box-sub {
     font-family: var(--mono);
-    font-size: 10px; color: var(--ink-low); margin-top: 5px;
+    font-size: 10px;
+    color: var(--ink-low);
+    margin-top: 5px;
   }
 
   /* ---------- Annotations ---------- */
-  .notes { width: 390px; max-width: 100%; display: flex; flex-direction: column; gap: 9px; }
+  .notes {
+    width: 390px;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
   .note {
-    background: var(--card); border: 1px solid var(--rule);
+    background: var(--card);
+    border: 1px solid var(--rule);
     border-left: 2px solid var(--exer);
-    border-radius: var(--r-sm); padding: 12px 14px;
+    border-radius: var(--r-sm);
+    padding: 12px 14px;
   }
   .note h3 {
     font-family: var(--mono);
-    font-size: 9.5px; font-weight: 700; letter-spacing: .11em;
-    text-transform: uppercase; color: var(--exer); margin-bottom: 5px;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--exer);
+    margin-bottom: 5px;
   }
-  .note p { font-size: 12.5px; line-height: 1.65; color: var(--ink-mid); }
+  .note p {
+    font-size: 12.5px;
+    line-height: 1.65;
+    color: var(--ink-mid);
+  }
 
   @media (max-width: 440px) {
-    body { padding: 24px 12px 40px; }
-    .stage { transform: none; margin-bottom: 26px; }
-    .phone { height: auto; min-height: 100%; }
+    body {
+      padding: 24px 12px 40px;
+    }
+    .stage {
+      transform: none;
+      margin-bottom: 26px;
+    }
+    .phone {
+      height: auto;
+      min-height: 100%;
+    }
   }
   @media (prefers-reduced-motion: reduce) {
-    * { animation: none !important; transition: none !important; }
+    * {
+      animation: none !important;
+      transition: none !important;
+    }
   }
 
-  @keyframes draw { from { stroke-dashoffset: var(--circ); } }
-  .ring .prog { animation: draw 1.2s cubic-bezier(.22,1,.36,1) both; }
+  @keyframes draw {
+    from {
+      stroke-dashoffset: var(--circ);
+    }
+  }
+  .ring .prog {
+    animation: draw 1.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
 </style>
 
 <div class="sheet-head">
@@ -319,114 +502,211 @@
 </div>
 
 <div class="stage">
-<div class="phone">
-  <div class="notch"></div>
-  <div class="screen">
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="screen">
+      <div class="top">
+        <div class="date">Thu 13 Aug</div>
+        <div class="avatar">S</div>
+      </div>
 
-    <div class="top">
-      <div class="date">Thu 13 Aug</div>
-      <div class="avatar">S</div>
+      <div class="flex-1"></div>
+
+      <div class="steps-line">
+        <span class="n">8,742</span>
+        <span class="g">/ 10,000</span>
+        <span class="l">Steps for Shailendra</span>
+      </div>
+
+      <div class="flex-2"></div>
+
+      <div class="ring-wrap">
+        <div class="ring">
+          <svg width="290" height="290" viewBox="0 0 290 290">
+            <!-- Outer: Move · r=125, circ 785.4 · 230/300 = 77% -->
+            <circle
+              cx="145"
+              cy="145"
+              r="125"
+              stroke="var(--paper-2)"
+              stroke-width="20"
+            />
+            <circle
+              class="prog"
+              cx="145"
+              cy="145"
+              r="125"
+              stroke="var(--move)"
+              stroke-width="20"
+              style="
+                --circ: 785.4;
+                stroke-dasharray: 785.4;
+                stroke-dashoffset: 183.3;
+              "
+            />
+
+            <!-- Middle: Exercise · r=101, circ 634.6 · 18/30 = 60% -->
+            <circle
+              cx="145"
+              cy="145"
+              r="101"
+              stroke="var(--paper-2)"
+              stroke-width="20"
+            />
+            <circle
+              class="prog"
+              cx="145"
+              cy="145"
+              r="101"
+              stroke="var(--exer)"
+              stroke-width="20"
+              style="
+                --circ: 634.6;
+                stroke-dasharray: 634.6;
+                stroke-dashoffset: 253.8;
+              "
+            />
+
+            <!-- Inner: Stand · r=77, circ 483.8 · 9/12 = 75% -->
+            <circle
+              cx="145"
+              cy="145"
+              r="77"
+              stroke="var(--paper-2)"
+              stroke-width="20"
+            />
+            <circle
+              class="prog"
+              cx="145"
+              cy="145"
+              r="77"
+              stroke="var(--stand)"
+              stroke-width="20"
+              style="
+                --circ: 483.8;
+                stroke-dasharray: 483.8;
+                stroke-dashoffset: 121;
+              "
+            />
+          </svg>
+        </div>
+      </div>
+
+      <div class="flex-2"></div>
+
+      <div class="row">
+        <div class="box">
+          <div class="box-label">Calories</div>
+          <div class="box-num" style="color: var(--move)">230</div>
+          <div class="box-sub">of 300 kcal</div>
+        </div>
+        <div class="box">
+          <div class="box-label">Exercise</div>
+          <div class="box-num" style="color: var(--exer)">18</div>
+          <div class="box-sub">of 30 min</div>
+        </div>
+        <div class="box">
+          <div class="box-label">Stand</div>
+          <div class="box-num" style="color: var(--stand)">9</div>
+          <div class="box-sub">of 12 hrs</div>
+        </div>
+      </div>
+
+      <div class="flex-1"></div>
     </div>
 
-    <div class="flex-1"></div>
-
-    <div class="steps-line">
-      <span class="n">8,742</span>
-      <span class="g">/ 10,000</span>
-      <span class="l">Steps</span>
-    </div>
-
-    <div class="flex-2"></div>
-
-    <div class="ring-wrap">
-      <div class="ring">
-        <svg width="290" height="290" viewBox="0 0 290 290">
-          <!-- Outer: Move · r=125, circ 785.4 · 230/300 = 77% -->
-          <circle cx="145" cy="145" r="125" stroke="var(--paper-2)" stroke-width="20"/>
-          <circle class="prog" cx="145" cy="145" r="125" stroke="var(--move)" stroke-width="20"
-                  style="--circ:785.4; stroke-dasharray:785.4; stroke-dashoffset:183.3"/>
-
-          <!-- Middle: Exercise · r=101, circ 634.6 · 18/30 = 60% -->
-          <circle cx="145" cy="145" r="101" stroke="var(--paper-2)" stroke-width="20"/>
-          <circle class="prog" cx="145" cy="145" r="101" stroke="var(--exer)" stroke-width="20"
-                  style="--circ:634.6; stroke-dasharray:634.6; stroke-dashoffset:253.8"/>
-
-          <!-- Inner: Stand · r=77, circ 483.8 · 9/12 = 75% -->
-          <circle cx="145" cy="145" r="77" stroke="var(--paper-2)" stroke-width="20"/>
-          <circle class="prog" cx="145" cy="145" r="77" stroke="var(--stand)" stroke-width="20"
-                  style="--circ:483.8; stroke-dasharray:483.8; stroke-dashoffset:121.0"/>
+    <div class="bottom">
+      <label class="search">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.2"
+          stroke-linecap="round"
+        >
+          <circle cx="11" cy="11" r="7" />
+          <path d="M20 20l-3.5-3.5" />
         </svg>
-
-      </div>
+        <input
+          placeholder="Log food, workout, or search"
+          aria-label="Log food, workout, or search"
+        />
+      </label>
+      <div class="home-ind"></div>
     </div>
-
-    <div class="flex-2"></div>
-
-    <div class="row">
-      <div class="box">
-        <div class="box-label">Calories</div>
-        <div class="box-num" style="color:var(--move)">230</div>
-        <div class="box-sub">of 300 kcal</div>
-      </div>
-      <div class="box">
-        <div class="box-label">Exercise</div>
-        <div class="box-num" style="color:var(--exer)">18</div>
-        <div class="box-sub">of 30 min</div>
-      </div>
-      <div class="box">
-        <div class="box-label">Stand</div>
-        <div class="box-num" style="color:var(--stand)">9</div>
-        <div class="box-sub">of 12 hrs</div>
-      </div>
-    </div>
-
-    <div class="flex-1"></div>
-
   </div>
-
-  <div class="bottom">
-    <label class="search">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-        <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>
-      </svg>
-      <input placeholder="Log food, workout, or search" aria-label="Log food, workout, or search">
-    </label>
-    <div class="home-ind"></div>
-  </div>
-</div>
 </div>
 
 <div class="notes">
   <div class="note">
     <h3>Kindle paper</h3>
-    <p>Warm off-white <span style="font-family:var(--mono)">#FAF7F1</span>, never pure white — paper reflects, screens emit. Ink is warm near-black <span style="font-family:var(--mono)">#1F1B16</span>, not <span style="font-family:var(--mono)">#000</span>, which is harsh on light ground.</p>
+    <p>
+      Warm off-white <span style="font-family: var(--mono)">#FAF7F1</span>,
+      never pure white — paper reflects, screens emit. Ink is warm near-black
+      <span style="font-family: var(--mono)">#1F1B16</span>, not
+      <span style="font-family: var(--mono)">#000</span>, which is harsh on
+      light ground.
+    </p>
   </div>
   <div class="note">
     <h3>Search in the thumb zone</h3>
-    <p>Pinned to the bottom above the home indicator. On a 6.1" screen the top edge needs a hand shuffle; the bottom is where the thumb already rests. Logging is the app's primary verb, so it belongs where the hand is.</p>
+    <p>
+      Pinned to the bottom above the home indicator. On a 6.1" screen the top
+      edge needs a hand shuffle; the bottom is where the thumb already rests.
+      Logging is the app's primary verb, so it belongs where the hand is.
+    </p>
   </div>
   <div class="note">
     <h3>Empty ring centre</h3>
-    <p>The rings now carry progress by shape alone; the three numbers live in the boxes below. Apple's own colours throughout — <span style="font-family:var(--mono)">#FA114F</span>, <span style="font-family:var(--mono)">#92E82A</span>, <span style="font-family:var(--mono)">#1AD7E5</span>.</p>
+    <p>
+      The rings now carry progress by shape alone; the three numbers live in the
+      boxes below. Apple's own colours throughout —
+      <span style="font-family: var(--mono)">#FA114F</span>,
+      <span style="font-family: var(--mono)">#92E82A</span>,
+      <span style="font-family: var(--mono)">#1AD7E5</span>.
+    </p>
   </div>
   <div class="note">
     <h3>Steps as an open line</h3>
-    <p>No box, no border, no fill — it sits on bare paper above the ring, reading as a stated fact rather than a widget. Being the only unboxed element on the screen is what gives it weight.</p>
+    <p>
+      No box, no border, no fill — it sits on bare paper above the ring, reading
+      as a stated fact rather than a widget. Being the only unboxed element on
+      the screen is what gives it weight.
+    </p>
   </div>
   <div class="note">
     <h3>Legend removed</h3>
-    <p>The three boxes name and colour-code every metric, so the dot legend was saying it twice. One accessory off.</p>
+    <p>
+      The three boxes name and colour-code every metric, so the dot legend was
+      saying it twice. One accessory off.
+    </p>
   </div>
   <div class="note">
     <h3>One caution on the colours</h3>
-    <p>Apple tuned these for a black screen, where they glow. On paper white the green in particular loses contrast. If it reads washed out to you, say so — I can darken them slightly while keeping them recognisably Apple.</p>
+    <p>
+      Apple tuned these for a black screen, where they glow. On paper white the
+      green in particular loses contrast. If it reads washed out to you, say so
+      — I can darken them slightly while keeping them recognisably Apple.
+    </p>
   </div>
   <div class="note">
     <h3>Vertical budget — the gap, fixed</h3>
-    <p>Content is 524px on an 852px screen, leaving 328px free. That slack was pooling into one dead gap above the search bar. It now distributes through four elastic spacers (68 / 96 / 96 / 68), and the ring grew 250 → 290px to use the room. On a taller 6.7" phone the gaps stretch; on a 5.4" they compress. Nothing is positioned by guesswork.</p>
+    <p>
+      Content is 524px on an 852px screen, leaving 328px free. That slack was
+      pooling into one dead gap above the search bar. It now distributes through
+      four elastic spacers (68 / 96 / 96 / 68), and the ring grew 250 → 290px to
+      use the room. On a taller 6.7" phone the gaps stretch; on a 5.4" they
+      compress. Nothing is positioned by guesswork.
+    </p>
   </div>
   <div class="note">
     <h3>Almost no fitness app is light-first</h3>
-    <p>The category defaults to black. Paper white is genuinely differentiating and easier to read in daylight, which is when your user checks their steps.</p>
+    <p>
+      The category defaults to black. Paper white is genuinely differentiating
+      and easier to read in daylight, which is when your user checks their
+      steps.
+    </p>
   </div>
 </div>
