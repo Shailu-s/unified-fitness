@@ -1,0 +1,231 @@
+<title>Log — Bottom Bar Options</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --paper:#FAF7F1; --paper-2:#F4F0E8; --card:#FFFDF9; --rule:#E3DDD1;
+    --ink:#1F1B16; --ink-mid:#6B6459; --ink-low:#9A9285;
+    --move:#FA114F; --protein:#C2410C; --fibre:#4D7C3F;
+    --ui:'Inter',-apple-system,system-ui,sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+    --r-md:12px; --r-sm:9px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    background:#E8E2D6; font-family:var(--ui); color:var(--ink);
+    -webkit-font-smoothing:antialiased; padding:36px 20px 60px;
+  }
+  .head{text-align:center;max-width:760px;margin:0 auto 34px}
+  .head h1{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-mid)}
+  .head p{margin-top:7px;font-size:13.5px;line-height:1.6;color:var(--ink-low)}
+
+  .grid{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(330px,1fr));
+    gap:28px; max-width:1500px; margin:0 auto; justify-items:center;
+  }
+  .col{width:100%;max-width:393px}
+  .tag{
+    display:flex;align-items:baseline;gap:9px;margin-bottom:11px;
+  }
+  .tag b{
+    font-family:var(--mono);font-size:11px;font-weight:700;
+    letter-spacing:.1em;color:var(--ink);
+  }
+  .tag span{font-size:12px;color:var(--ink-low)}
+
+  /* Phone: only the lower half — this is a bottom-bar study */
+  .phone{
+    background:var(--paper); border:1px solid #D6CFC1;
+    border-radius:24px; overflow:hidden;
+    box-shadow:0 18px 40px -14px rgba(60,50,35,.26);
+    display:flex;flex-direction:column; height:430px;
+  }
+  .fade{
+    flex:1; padding:18px 20px 0; position:relative; min-height:0;
+    -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 42px);
+            mask-image:linear-gradient(180deg,transparent 0,#000 42px);
+  }
+  .mh{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-low);margin-bottom:12px}
+  .meal{display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid var(--rule)}
+  .mt{width:34px;height:34px;border-radius:var(--r-sm);background:var(--paper-2);display:grid;place-items:center;font-size:15px;flex-shrink:0}
+  .mb{flex:1;min-width:0}
+  .mn{font-size:13.5px;font-weight:500}
+  .ms{font-family:var(--mono);font-size:10px;color:var(--ink-low);margin-top:2px}
+  .mk{font-family:var(--mono);font-size:13.5px;font-weight:700;font-variant-numeric:tabular-nums}
+
+  .ind{width:120px;height:5px;border-radius:99px;background:var(--rule);margin:0 auto}
+
+  /* ============ 1 · ONE FIELD ============
+     A single input line. Tap to type, or hit the mic / camera glyph
+     inside it. One control, three ways in — nothing stacked.      */
+  .o1{padding:12px 20px 14px;background:var(--paper)}
+  .o1 .field{
+    display:flex;align-items:center;gap:11px;
+    background:var(--card);border:1px solid var(--rule);
+    border-radius:99px;padding:14px 8px 14px 18px;
+  }
+  .o1 .ph{flex:1;font-size:15px;color:var(--ink-low)}
+  .o1 .ic{
+    width:36px;height:36px;border-radius:50%;display:grid;place-items:center;
+    color:var(--ink-mid);flex-shrink:0;
+  }
+  .o1 .ic.cam{background:var(--ink);color:var(--paper)}
+  .o1 .ind{margin-top:14px}
+
+  /* ============ 2 · BIG SHUTTER ============
+     Camera is a real shutter button, centred, with voice and type
+     as small satellites. Photo is unmistakably the main path.     */
+  .o2{padding:16px 20px 14px;background:var(--paper);text-align:center}
+  .o2 .sat-row{display:flex;align-items:center;justify-content:center;gap:26px}
+  .o2 .sat{
+    width:46px;height:46px;border-radius:50%;
+    background:var(--card);border:1px solid var(--rule);
+    display:grid;place-items:center;color:var(--ink-mid);cursor:pointer;
+  }
+  .o2 .shutter{
+    width:68px;height:68px;border-radius:50%;
+    background:var(--ink);display:grid;place-items:center;
+    color:var(--paper);cursor:pointer;
+    box-shadow:0 6px 16px -4px rgba(31,27,22,.4);
+  }
+  .o2 .cap{font-size:10.5px;color:var(--ink-low);margin-top:11px;letter-spacing:.03em}
+  .o2 .ind{margin-top:13px}
+
+  /* ============ 3 · PILL ROW ============
+     Horizontal pills, icon + word inline. Compact, quiet, reads as
+     a sentence of options rather than a block of tiles.           */
+  .o3{padding:14px 20px 14px;background:var(--paper)}
+  .o3 .q{font-size:13px;color:var(--ink-mid);margin-bottom:11px}
+  .o3 .pills{display:flex;gap:8px}
+  .o3 .pill{
+    flex:1;display:flex;align-items:center;justify-content:center;gap:7px;
+    padding:12px 0;border-radius:99px;
+    background:var(--card);border:1px solid var(--rule);cursor:pointer;
+  }
+  .o3 .pill.on{background:var(--ink);border-color:var(--ink)}
+  .o3 .pill span{font-size:12.5px;font-weight:500;color:var(--ink-mid)}
+  .o3 .pill.on span,.o3 .pill.on svg{color:var(--paper)}
+  .o3 .pill svg{color:var(--ink-mid)}
+  .o3 .ind{margin-top:14px}
+
+  /* ============ 4 · FAB ============
+     Nothing but a floating button. Maximum restraint — the bottom
+     of the screen stays paper, one dark circle invites the log.   */
+  .o4{padding:0 20px 14px;background:var(--paper);position:relative}
+  .o4 .fabwrap{display:flex;justify-content:flex-end;margin-top:-26px;margin-bottom:14px}
+  .o4 .fab{
+    width:60px;height:60px;border-radius:50%;
+    background:var(--ink);display:grid;place-items:center;color:var(--paper);
+    box-shadow:0 10px 24px -6px rgba(31,27,22,.45);cursor:pointer;
+  }
+  .o4 .ind{margin-top:0}
+
+  .why{
+    margin-top:12px;padding:11px 13px;background:var(--card);
+    border:1px solid var(--rule);border-left:2px solid var(--protein);
+    border-radius:var(--r-sm);
+  }
+  .why p{font-size:12px;line-height:1.6;color:var(--ink-mid)}
+  .why b{color:var(--ink)}
+</style>
+
+<div class="head">
+  <h1>Log screen — bottom bar, four directions</h1>
+  <p>Same screen above, four ways to handle logging below. Pick one and I'll build it into the page.</p>
+</div>
+
+<div class="grid">
+
+  <!-- ================= 1 ================= -->
+  <div class="col">
+    <div class="tag"><b>1</b><span>One field</span></div>
+    <div class="phone">
+      <div class="fade">
+        <div class="mh">Eaten so far</div>
+        <div class="meal"><div class="mt">🍳</div><div class="mb"><div class="mn">Poha with peanuts</div><div class="ms">08:20 · 1 plate</div></div><div class="mk">320</div></div>
+        <div class="meal"><div class="mt">🍛</div><div class="mb"><div class="mn">Dal, 2 roti, sabzi</div><div class="ms">13:45 · 1 katori + 2</div></div><div class="mk">610</div></div>
+        <div class="meal"><div class="mt">☕</div><div class="mb"><div class="mn">Chai with sugar</div><div class="ms">17:10 · 1 cup</div></div><div class="mk">120</div></div>
+      </div>
+      <div class="o1">
+        <div class="field">
+          <span class="ph">What did you eat?</span>
+          <span class="ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg></span>
+          <span class="ic cam"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5A1.5 1.5 0 014.5 7h2L8 5h8l1.5 2h2A1.5 1.5 0 0121 8.5v9a1.5 1.5 0 01-1.5 1.5h-15A1.5 1.5 0 013 17.5z"/><circle cx="12" cy="13" r="3.4"/></svg></span>
+        </div>
+        <div class="ind"></div>
+      </div>
+    </div>
+    <div class="why"><p><b>Most invisible.</b> One control instead of three. Typing is the default, mic and camera live inside the field. Familiar as a chat box — nothing to learn.</p></div>
+  </div>
+
+  <!-- ================= 2 ================= -->
+  <div class="col">
+    <div class="tag"><b>2</b><span>Big shutter</span></div>
+    <div class="phone">
+      <div class="fade">
+        <div class="mh">Eaten so far</div>
+        <div class="meal"><div class="mt">🍳</div><div class="mb"><div class="mn">Poha with peanuts</div><div class="ms">08:20 · 1 plate</div></div><div class="mk">320</div></div>
+        <div class="meal"><div class="mt">🍛</div><div class="mb"><div class="mn">Dal, 2 roti, sabzi</div><div class="ms">13:45 · 1 katori + 2</div></div><div class="mk">610</div></div>
+        <div class="meal"><div class="mt">☕</div><div class="mb"><div class="mn">Chai with sugar</div><div class="ms">17:10 · 1 cup</div></div><div class="mk">120</div></div>
+      </div>
+      <div class="o2">
+        <div class="sat-row">
+          <div class="sat"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h9"/></svg></div>
+          <div class="shutter"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5A1.5 1.5 0 014.5 7h2L8 5h8l1.5 2h2A1.5 1.5 0 0121 8.5v9a1.5 1.5 0 01-1.5 1.5h-15A1.5 1.5 0 013 17.5z"/><circle cx="12" cy="13" r="3.4"/></svg></div>
+          <div class="sat"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg></div>
+        </div>
+        <div class="cap">Snap your plate</div>
+        <div class="ind"></div>
+      </div>
+    </div>
+    <div class="why"><p><b>Most confident.</b> A real camera shutter, centred, with type and voice as satellites. Says "photograph your food" with zero ambiguity. Riskiest if photo accuracy disappoints.</p></div>
+  </div>
+
+  <!-- ================= 3 ================= -->
+  <div class="col">
+    <div class="tag"><b>3</b><span>Pill row</span></div>
+    <div class="phone">
+      <div class="fade">
+        <div class="mh">Eaten so far</div>
+        <div class="meal"><div class="mt">🍳</div><div class="mb"><div class="mn">Poha with peanuts</div><div class="ms">08:20 · 1 plate</div></div><div class="mk">320</div></div>
+        <div class="meal"><div class="mt">🍛</div><div class="mb"><div class="mn">Dal, 2 roti, sabzi</div><div class="ms">13:45 · 1 katori + 2</div></div><div class="mk">610</div></div>
+        <div class="meal"><div class="mt">☕</div><div class="mb"><div class="mn">Chai with sugar</div><div class="ms">17:10 · 1 cup</div></div><div class="mk">120</div></div>
+      </div>
+      <div class="o3">
+        <div class="q">What did you eat?</div>
+        <div class="pills">
+          <div class="pill on"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5A1.5 1.5 0 014.5 7h2L8 5h8l1.5 2h2A1.5 1.5 0 0121 8.5v9a1.5 1.5 0 01-1.5 1.5h-15A1.5 1.5 0 013 17.5z"/><circle cx="12" cy="13" r="3.4"/></svg><span>Photo</span></div>
+          <div class="pill"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg><span>Speak</span></div>
+          <div class="pill"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h9"/></svg><span>Type</span></div>
+        </div>
+        <div class="ind"></div>
+      </div>
+    </div>
+    <div class="why"><p><b>Closest to now, done right.</b> Icon and word sit inline so pills stay short — no tall tiles. Reads as a row of choices, not a slab of buttons.</p></div>
+  </div>
+
+  <!-- ================= 4 ================= -->
+  <div class="col">
+    <div class="tag"><b>4</b><span>Floating button</span></div>
+    <div class="phone">
+      <div class="fade">
+        <div class="mh">Eaten so far</div>
+        <div class="meal"><div class="mt">🍳</div><div class="mb"><div class="mn">Poha with peanuts</div><div class="ms">08:20 · 1 plate</div></div><div class="mk">320</div></div>
+        <div class="meal"><div class="mt">🍛</div><div class="mb"><div class="mn">Dal, 2 roti, sabzi</div><div class="ms">13:45 · 1 katori + 2</div></div><div class="mk">610</div></div>
+        <div class="meal"><div class="mt">☕</div><div class="mb"><div class="mn">Chai with sugar</div><div class="ms">17:10 · 1 cup</div></div><div class="mk">120</div></div>
+        <div class="meal"><div class="mt">🥜</div><div class="mb"><div class="mn">Roasted chana</div><div class="ms">16:15 · 1 bowl</div></div><div class="mk">180</div></div>
+      </div>
+      <div class="o4">
+        <div class="fabwrap">
+          <div class="fab"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+        </div>
+        <div class="ind"></div>
+      </div>
+    </div>
+    <div class="why"><p><b>Most minimal.</b> Zero bottom furniture — the list runs to the edge and one dark circle floats over it. Tapping opens a sheet with all three inputs. Costs one extra tap.</p></div>
+  </div>
+
+</div>

@@ -1,0 +1,447 @@
+<title>Unified Fitness — Log</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  /* ============================================================
+     UNIFIED FITNESS — Log  (swipe right from Home)
+     Same token system as homepage.html. Nothing new invented.
+     ============================================================ */
+  :root {
+    --paper:    #FAF7F1;
+    --paper-2:  #F4F0E8;
+    --card:     #FFFDF9;
+    --rule:     #E3DDD1;
+
+    --ink:      #1F1B16;
+    --ink-mid:  #6B6459;
+    --ink-low:  #9A9285;
+
+    --move:     #FA114F;   /* calories */
+    --exer:     #92E82A;
+    --stand:    #1AD7E5;
+
+    /* Macro hues. Deliberately quiet — protein and fibre are
+       supporting information, not competing heroes.               */
+    --protein:  #C2410C;   /* burnt orange */
+    --fibre:    #4D7C3F;   /* olive        */
+
+    --ui:   'Inter', -apple-system, system-ui, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+
+    --r-lg: 18px;
+    --r-md: 12px;
+    --r-sm: 9px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #E8E2D6;
+    font-family: var(--ui);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 26px; padding: 40px 20px 64px; min-height: 100vh;
+  }
+
+  .sheet-head { text-align: center; max-width: 620px; }
+  .sheet-head h1 {
+    font-size: 12px; font-weight: 600; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--ink-mid);
+  }
+  .sheet-head p {
+    margin-top: 7px; font-size: 13.5px; line-height: 1.6; color: var(--ink-low);
+  }
+
+  .stage { transform: scale(1.35); transform-origin: top center; margin-bottom: 300px; }
+  .phone {
+    width: 393px; max-width: 100%; height: 852px;
+    background: var(--paper);
+    border-radius: 46px; border: 1px solid #D6CFC1;
+    padding: 14px 0 0; overflow: hidden;
+    box-shadow: 0 30px 60px -18px rgba(60,50,35,.28);
+    display: flex; flex-direction: column;
+  }
+  .notch {
+    width: 100px; height: 5px; border-radius: 99px;
+    background: var(--rule); margin: 0 auto 22px;
+  }
+  .screen {
+    padding: 0 22px; flex: 1;
+    display: flex; flex-direction: column; min-height: 0;
+  }
+
+  /* ---------- Page indicator ----------
+     Two dots: Home · Log. Tells the user this screen is one swipe
+     from the last, and that there is nothing further right.       */
+  .top {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0; margin-bottom: 22px;
+  }
+  .title {
+    font-size: 17px; font-weight: 600; letter-spacing: -.01em;
+  }
+  .dots { display: flex; gap: 5px; align-items: center; }
+  .dots i {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--rule); display: block;
+  }
+  .dots i.on { background: var(--ink-low); width: 14px; border-radius: 99px; }
+
+  /* ---------- HERO: protein remaining ----------
+     Protein leads, not calories. It is the target people actually
+     struggle to hit — especially on a vegetarian-heavy Indian diet,
+     where calories are easy and protein is the real work.          */
+  .hero { flex-shrink: 0; }
+  .hero-num {
+    font-family: var(--mono);
+    font-size: 62px; font-weight: 700; letter-spacing: -.05em;
+    font-variant-numeric: tabular-nums; line-height: 1;
+    color: var(--protein);
+  }
+  .hero-num small {
+    font-size: 26px; font-weight: 600; color: var(--ink-low);
+    letter-spacing: -.02em;
+  }
+  .hero-label {
+    font-size: 10px; font-weight: 600; letter-spacing: .13em;
+    text-transform: uppercase; color: var(--ink-mid); margin-top: 10px;
+  }
+  /* Hero sits directly on the bars — one protein block, not two. */
+  .hero { margin-bottom: 20px; }
+
+  /* ---------- Three bars, grouped as one block ----------
+     Thick enough to carry the percentage INSIDE the fill. All three
+     sit together so they read as one instrument, not three widgets. */
+  .macros { flex-shrink: 0; display: flex; flex-direction: column; gap: 11px; }
+  .macro-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .macro-name {
+    font-size: 11px; font-weight: 600; letter-spacing: .09em;
+    text-transform: uppercase; color: var(--ink-mid);
+  }
+  .macro-val {
+    font-family: var(--mono); font-size: 11.5px; font-weight: 500;
+    color: var(--ink-low); font-variant-numeric: tabular-nums;
+  }
+  .macro-val b { color: var(--ink); font-weight: 700; }
+
+  .bar {
+    height: 26px; border-radius: 7px; background: var(--paper-2);
+    overflow: hidden; position: relative;
+  }
+  .bar i {
+    display: block; height: 100%; border-radius: 7px;
+    position: relative;
+  }
+  /* Percentage sits inside the fill, right-aligned at its leading
+     edge — so it travels with progress instead of sitting still.  */
+  .bar em {
+    position: absolute; top: 0; bottom: 0;
+    display: flex; align-items: center;
+    font-family: var(--mono); font-size: 11px; font-weight: 700;
+    font-style: normal; font-variant-numeric: tabular-nums;
+    color: #fff; right: 9px;
+  }
+  /* When the fill is too short to hold its own label, the number
+     flips outside and switches to ink.                            */
+  .bar.thin em { right: auto; color: var(--ink-mid); }
+  /* Over 100% — the fill is full and the number reads as overflow. */
+  .bar.over i { background: var(--move) !important; }
+
+  /* Burned: one quiet line under the calories bar. No second bar,
+     no marker, no new grammar — it is context, not a target.      */
+  .burn-line {
+    display: flex; align-items: center; gap: 6px; margin-top: 7px;
+    font-family: var(--mono); font-size: 11px; color: var(--ink-low);
+    font-variant-numeric: tabular-nums;
+  }
+  .burn-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--move); flex-shrink: 0;
+  }
+
+
+  /* ---------- Meals ---------- */
+  /* The deep gap: a deliberate breath between the day's targets and
+     the day's record. Two different kinds of information, separated
+     by silence rather than a divider line.                         */
+  .meals {
+    flex: 1; min-height: 0; overflow: hidden;
+    margin-top: 66px;
+  }
+  .meals-head {
+    font-size: 10px; font-weight: 600; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--ink-low);
+    margin-bottom: 13px;
+  }
+  .meal {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .meal:last-child { border-bottom: none; }
+  .meal-thumb {
+    width: 38px; height: 38px; border-radius: var(--r-sm);
+    background: var(--paper-2); flex-shrink: 0;
+    display: grid; place-items: center; font-size: 16px;
+  }
+  .meal-body { flex: 1; min-width: 0; }
+  .meal-name {
+    font-size: 14px; font-weight: 500; letter-spacing: -.005em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .meal-sub {
+    font-family: var(--mono); font-size: 10.5px;
+    color: var(--ink-low); margin-top: 3px;
+  }
+  .meal-kcal {
+    font-family: var(--mono); font-size: 14px; font-weight: 700;
+    font-variant-numeric: tabular-nums; flex-shrink: 0;
+  }
+
+  /* ---------- Bottom: photo-first logging ----------
+     Camera is the primary action and gets the filled treatment.
+     Voice and type sit beside it as equals in size, quieter in
+     weight — three ways in, one obvious default.                  */
+  /* ---------- Big shutter ----------
+     Photo is unmistakably the main path: a real camera shutter,
+     centred, with voice and type as satellites either side. The
+     shape borrows from a camera app, so the gesture is already
+     understood before anything is read.                           */
+  .bottom {
+    padding: 16px 20px calc(10px + env(safe-area-inset-bottom, 22px));
+    background: var(--paper);
+    flex-shrink: 0; text-align: center;
+  }
+  .sat-row {
+    display: flex; align-items: center; justify-content: center; gap: 26px;
+  }
+  .sat {
+    width: 46px; height: 46px; border-radius: 50%;
+    background: var(--card); border: 1px solid var(--rule);
+    display: grid; place-items: center;
+    color: var(--ink-mid); cursor: pointer;
+    transition: border-color .16s ease, transform .16s ease;
+  }
+  .sat:hover { border-color: #CDC5B5; transform: translateY(-1px); }
+  .sat:active { transform: translateY(0); }
+
+  .shutter {
+    width: 68px; height: 68px; border-radius: 50%;
+    background: var(--ink); display: grid; place-items: center;
+    color: var(--paper); cursor: pointer;
+    box-shadow: 0 6px 16px -4px rgba(31,27,22,.4);
+    transition: background .16s ease, transform .16s ease;
+  }
+  .shutter:hover { background: #2C261F; transform: scale(1.04); }
+  .shutter:active { transform: scale(.97); }
+
+  .cap {
+    font-size: 10.5px; color: var(--ink-low);
+    margin-top: 11px; letter-spacing: .03em;
+  }
+
+  .home-ind {
+    width: 128px; height: 5px; border-radius: 99px;
+    background: var(--rule); margin: 15px auto 0;
+  }
+
+  .flex-1 { flex: 1 1 0; min-height: 12px; }
+
+  /* ---------- Notes ---------- */
+  .notes { width: 393px; max-width: 100%; display: flex; flex-direction: column; gap: 9px; }
+  .note {
+    background: var(--card); border: 1px solid var(--rule);
+    border-left: 2px solid var(--move);
+    border-radius: var(--r-sm); padding: 12px 14px;
+  }
+  .note h3 {
+    font-family: var(--mono);
+    font-size: 9.5px; font-weight: 700; letter-spacing: .11em;
+    text-transform: uppercase; color: var(--move); margin-bottom: 5px;
+  }
+  .note p { font-size: 12.5px; line-height: 1.65; color: var(--ink-mid); }
+
+  @media (max-width: 440px) {
+    body { padding: 24px 12px 40px; }
+    .stage { transform: none; margin-bottom: 26px; }
+    .phone { height: auto; min-height: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+
+  @keyframes grow { from { transform: scaleX(0); } }
+  .bar i, .budget i { transform-origin: left; animation: grow 1s cubic-bezier(.22,1,.36,1) both; }
+</style>
+
+<div class="sheet-head">
+  <h1>Unified Fitness — Log</h1>
+  <p>Swipe right from Home. Protein hero, three bars, photo-first logging.</p>
+</div>
+
+<div class="stage">
+<div class="phone">
+  <div class="notch"></div>
+  <div class="screen">
+
+    <div class="top">
+      <div class="title">Today</div>
+      <div class="dots"><i></i><i class="on"></i></div>
+    </div>
+
+    <div class="hero">
+      <div class="hero-num">52<small>g</small></div>
+      <div class="hero-label">Protein left today</div>
+    </div>
+
+    <div class="macros">
+      <div>
+        <div class="macro-head">
+          <span class="macro-name">Protein</span>
+          <span class="macro-val"><b>68</b> / 120 g</span>
+        </div>
+        <div class="bar">
+          <i style="width:57%; background:var(--protein)"><em>57%</em></i>
+        </div>
+      </div>
+
+      <div>
+        <div class="macro-head">
+          <span class="macro-name">Fibre</span>
+          <span class="macro-val"><b>19</b> / 30 g</span>
+        </div>
+        <div class="bar">
+          <i style="width:63%; background:var(--fibre)"><em>63%</em></i>
+        </div>
+      </div>
+
+      <div>
+        <div class="macro-head">
+          <span class="macro-name">Calories</span>
+          <span class="macro-val"><b>1,340</b> / 2,100 kcal</span>
+        </div>
+        <div class="bar">
+          <i style="width:64%; background:var(--move)"><em>64%</em></i>
+        </div>
+        <div class="burn-line">
+          <span class="burn-dot"></span>
+          <span>412 burned today</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="meals">
+      <div class="meals-head">Eaten so far</div>
+
+      <div class="meal">
+        <div class="meal-thumb">🍳</div>
+        <div class="meal-body">
+          <div class="meal-name">Poha with peanuts</div>
+          <div class="meal-sub">08:20 · 1 plate</div>
+        </div>
+        <div class="meal-kcal">320</div>
+      </div>
+
+      <div class="meal">
+        <div class="meal-thumb">🍛</div>
+        <div class="meal-body">
+          <div class="meal-name">Dal, 2 roti, sabzi</div>
+          <div class="meal-sub">13:45 · 1 katori + 2</div>
+        </div>
+        <div class="meal-kcal">610</div>
+      </div>
+
+      <div class="meal">
+        <div class="meal-thumb">☕</div>
+        <div class="meal-body">
+          <div class="meal-name">Chai with sugar</div>
+          <div class="meal-sub">17:10 · 1 cup</div>
+        </div>
+        <div class="meal-kcal">120</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="bottom">
+    <div class="sat-row">
+      <div class="sat" role="button" tabindex="0" aria-label="Log by typing">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 7h16M4 12h16M4 17h9"/>
+        </svg>
+      </div>
+
+      <div class="shutter" role="button" tabindex="0" aria-label="Log by photo">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 8.5A1.5 1.5 0 014.5 7h2L8 5h8l1.5 2h2A1.5 1.5 0 0121 8.5v9a1.5 1.5 0 01-1.5 1.5h-15A1.5 1.5 0 013 17.5z"/>
+          <circle cx="12" cy="13" r="3.4"/>
+        </svg>
+      </div>
+
+      <div class="sat" role="button" tabindex="0" aria-label="Log by voice">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="3" width="6" height="11" rx="3"/>
+          <path d="M5 11a7 7 0 0014 0M12 18v3"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="cap">Snap your plate</div>
+    <div class="home-ind"></div>
+  </div>
+</div>
+</div>
+
+<div class="notes">
+  <div class="note">
+    <h3>Protein leads, not calories</h3>
+    <p><b>52g protein left</b> is the hero. Calories are easy to hit and easy to guess; protein is the number people actually miss — especially on a vegetarian-heavy Indian diet. Leading with it makes the app opinionated about what matters.</p>
+  </div>
+  <div class="note">
+    <h3>Three bars, one block</h3>
+    <p>Protein, fibre and calories sit together as a single instrument rather than three scattered widgets. Bars are 26px — thick enough to carry the percentage <i>inside</i> the fill, right-aligned at the leading edge so the number travels with progress.</p>
+  </div>
+  <div class="note">
+    <h3>Tight top, deep gap, then the log</h3>
+    <p>Hero and bars are pulled together into one protein block — the number and its bar belong to each other. Then a fixed 66px gap separates the day's <i>targets</i> from the day's <i>record</i>. Silence does the dividing, so no rule or card is needed.</p>
+  </div>
+  <div class="note">
+    <h3>The shutter</h3>
+    <p>A real 68px camera shutter, centred, with type and voice as 46px satellites. The shape is borrowed from a camera app, so the gesture is understood before a word is read. "Snap your plate" is the only copy needed.</p>
+  </div>
+  <div class="note">
+    <h3>"Eaten so far" for the table</h3>
+    <p>Not "Logged today" — that is system vocabulary, describing what the database did. <i>Eaten so far</i> is the user's own words for the same thing, and "so far" quietly implies the day is not over.</p>
+  </div>
+  <div class="note">
+    <h3>The risk worth naming</h3>
+    <p>This design stakes the main interaction on photo accuracy — and the Sydney study found AI apps off by up to 49% over and 76% under on <i>mixed</i> dishes, which is most Indian food. The shutter must therefore open an <b>editable draft</b>, never commit a number silently. Type and voice stay one tap away for anyone who wants precision.</p>
+  </div>
+  <div class="note">
+    <h3>Burned is context, not a target</h3>
+    <p>Goal stays 2,100 — untouched. Burned is one quiet line under the bar with a Move-pink dot: <b>412 burned today</b>. No second bar, no marker, no raised goal. It informs without asking to be decoded, because burn is not something you are trying to fill.</p>
+  </div>
+  <div class="note">
+    <h3>Over 100%</h3>
+    <p>The fill caps at full width and the label reads <span style="font-family:var(--mono)">150%</span> in place. For calories that is an overshoot; for protein it is a win. The metric decides whether over is good or bad.</p>
+  </div>
+  <div class="note">
+    <h3>Photo is primary, not exclusive</h3>
+    <p>Camera gets the filled dark button; voice and type sit beside it. Research says photo estimates are unreliable on mixed Indian food, so a photo must land in an <b>editable draft</b>, never silently commit a number. Three ways in, one obvious default.</p>
+  </div>
+  <div class="note">
+    <h3>Indian portions in the log</h3>
+    <p>Entries read "1 katori", "2 roti", "1 plate" — not grams. HealthifyMe already does this and users expect it. Grams-only input is a non-starter here.</p>
+  </div>
+  <div class="note">
+    <h3>What I left out</h3>
+    <p>No carbs/fat bars, no meal-type grouping (breakfast/lunch/dinner), no water tracker, no streak badge. All are standard in competitors and all were cut. Say the word if any earns its place.</p>
+  </div>
+</div>
