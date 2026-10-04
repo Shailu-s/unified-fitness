@@ -15,7 +15,7 @@ Founder feedback loop: after every slice, run checks, launch a runnable version,
 | ID | Slice | Status | Acceptance gate |
 |---|---|---|---|
 | 1.1 | Durable profile + typed meal logging + corrections | VERIFY | Save offline, kill app, reopen: profile and meal remain. Edits remain. Unknown nutrition is explicit. No seeded meals. |
-| 1.2 | Date-based history + export | TODO | Today excludes previous days; browse older logs; export all local records without server access. |
+| 1.2 | Date-based history + export | VERIFY | Today excludes previous days; browse older logs; export all local records without server access. |
 | 2.1 | Native development builds on both platforms | TODO | Install and launch iOS and Android builds; establish physical-device test matrix. |
 | 2.2 | Durable live GPS recording | TODO | Start/pause/resume/finish walk; saved route survives interruption. Test background/locked-screen behavior on a real Xiaomi/Realme and iPhone; document failures and battery impact. |
 | 2.3 | HealthKit / Health Connect adapters | TODO | Shared interface; permissions, denial, unavailable data, and refresh tested separately on each OS. No fabricated readings. Decide cross-platform ring definitions before implementation. |
@@ -30,7 +30,7 @@ Founder feedback loop: after every slice, run checks, launch a runnable version,
 
 Pilot may be local-only; public release requires accounts/sync and approved monetization. Native feasibility work happens before further UI polish.
 
-## Current slice: 1.1
+## Foundation: 1.1 verification
 
 Implementation checklist (checked means implemented/automated checks passed, not physical-device sign-off):
 
@@ -48,6 +48,30 @@ Implementation checklist (checked means implemented/automated checks passed, not
 - [ ] Physical iOS cold-start/offline test.
 - [ ] Physical Android cold-start/offline test.
 
+## Current slice: 1.2
+
+- [x] History opens separately from Today; previous/next day and Today shortcut.
+- [x] Saved-day shortcuts and day-specific totals; empty days explicit, no fake records.
+- [x] Corrections retain original date/identity; existing logs require no migration/reset.
+- [x] Full persisted profile/meal snapshot; all days included, unknown nutrition preserved.
+- [x] Versioned readable JSON; no demo activity or computed targets exported.
+- [x] Export confirmation and native share-sheet integration; cancel/retry leaves source records intact.
+- [x] SDK-compatible file/sharing dependencies pinned, both older than seven days.
+- [x] 18 automated tests pass in Asia/Kolkata and America/New_York; typecheck, SDK compatibility, iOS/Android bundles pass.
+- [ ] Founder iPhone history navigation and editing test.
+- [ ] Founder iPhone share-sheet cancel/retry and Save to Files test.
+- [ ] Founder offline browse/export test with the app already loaded.
+- [ ] Physical Android history/share-sheet test.
+
+### Founder checklist for 1.2
+
+1. Reload the existing Expo Go project; swipe left to food log. Existing meals should remain.
+2. Tap History: Today shows existing meals. Previous shows yesterday's real records or an empty state; Back to today restores today's records. No synthetic older records are created.
+3. Tap a meal in History; change its description and save. Close History: today's record updates if it was a today meal. Older corrections remain on their original day.
+4. Tap Export: cancel once, retry, Continue, then Save to Files → On My iPhone. Inspect the JSON for your profile and all meals, including unknown nutrition as null. It contains personal information; no need to send the file to the assistant.
+5. With the project already loaded, disable network and repeat browsing/export to a local Files folder. This is not a full Expo Go offline cold-start test.
+6. Report each pass/fail and any confusing UI. Do not start the next slice before feedback.
+
 ## Verification log
 
 - 2026-10-05: repository audited. Existing UI only; profile/meals in React state, activity/photo results mocked, text/voice placeholders. No existing roadmap or tests. Dependency installation completed using existing yarn lockfile.
@@ -64,6 +88,8 @@ Implementation checklist (checked means implemented/automated checks passed, not
 
 - 2026-10-05: founder reports the saved meal data survived the requested reopen test on iPhone. Expo Go persistence checkpoint passed; full airplane-mode cold start, Android, and midnight behavior are not signed off.
 - 2026-10-05: product feedback: no separate custom/manual calorie/protein logging feature needed. Current manual fields are tolerated for testing. Production primary flow remains text/voice → immediate durable save → async LLM/cache estimate. Keep hand-correction of estimates as the existing safety requirement, not mandatory nutrition entry or a standalone manual workflow.
+
+- 2026-10-05: meaningful-commit workflow requested by founder. Logging foundation committed as `ccb0c3c`; no push. Slice 1.2 adds local history and full JSON export without resetting records. 18 tests passed under both India/New York time zones; TypeScript, SDK compatibility, and iOS/Android bundle checks passed. Native share-sheet and Files results still await founder feedback.
 
 ### Re-run automated checks
 
@@ -92,7 +118,7 @@ On both iOS and Android, with an installed compatible client/build:
 
 ## Next action
 
-iPhone Expo Go persistence checkpoint passed per founder. Next build slice: 1.2 (history and export), followed by another founder testing checkpoint. Do not expand standalone manual nutrition entry; it is temporary test UI until automatic estimates and optional estimate corrections exist. Full airplane-mode cold-start checks and Android verification still required before marking native durability DONE.
+Founder tests slice 1.2 history/export on iPhone using the checklist above. Fix feedback before slice 2.1 (native development builds and device matrix). Do not expand standalone manual nutrition entry; it remains temporary test UI until automatic estimates and optional corrections exist. Full airplane-mode cold-start and Android verification remain required release gates.
 
 ## Blockers / decisions needed later
 

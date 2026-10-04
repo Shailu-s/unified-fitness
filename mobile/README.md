@@ -28,9 +28,12 @@ In `app.json`, set `"userInterfaceStyle": "light"` so the paper theme is never i
 
 Profile and submitted meals persist locally in SQLite. Typed food logs can have
 unknown nutrition; tap a saved meal to add or correct manual values. The provider
-does not seed mock meals or use the old onboarding/seed switches. Activity rings
-remain explicitly labeled demo data. Model estimation, photo, and voice are not
-implemented yet.
+does not seed mock meals or use the old onboarding/seed switches. Food log's History
+opens calendar-day records without changing Today. Export creates a versioned JSON
+copy of your profile and all saved meals; choose Save to Files for a local copy.
+Exported files contain personal information. History/share-sheet/offline behavior
+still needs device verification. Activity rings remain explicitly labeled demo data.
+Model estimation, photo, and voice are not implemented yet.
 
 ## Structure
 

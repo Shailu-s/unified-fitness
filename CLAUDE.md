@@ -89,8 +89,11 @@ Shailendra is the founder; Claude acts as technical co-founder, not an order-tak
 
 Expo / React Native / TypeScript app exists under `mobile/`. Slice 1.1 now has
 SQLite-backed profile and typed food logging with manual corrections and explicit
-unknown nutrition. Activity remains demo data. Native cold-start verification is
-pending; GPS, health integration, LLM estimates, sync, and billing are not built.
+unknown nutrition. Slice 1.2 adds separate calendar history and local JSON export
+(profile + all saved meals) through the native share sheet. Activity remains demo
+data. iPhone Expo Go reopen persistence passed per founder; native history/sharing
+and full offline cold-start verification are pending. GPS, health integration,
+LLM estimates, sync, and billing are not built.
 
 Build sequence and progress: `docs/build-plan.md`. Architecture reasoning:
 `docs/decisions/001-local-first-logging.md`.

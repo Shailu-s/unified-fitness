@@ -6,11 +6,13 @@ import { MacroBar } from '../components/MacroBar';
 import { MealRow } from '../components/MealRow';
 import { MealEditor } from '../components/MealEditor';
 import { useApp } from '../context/AppContext';
+import { shareExport } from '../lib/shareExport';
+import { HistoryScreen } from './HistoryScreen';
 import type { SavedMeal } from '../types';
 import { colors, eyebrow, fonts, gutter } from '../theme';
 
 export function LogScreen() {
-  const { targets, meals, eaten, addMeal, updateMeal } = useApp();
+  const { targets, meals, eaten, addMeal, updateMeal, getExportData } = useApp();
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
 
@@ -18,6 +20,21 @@ export function LogScreen() {
   const prevCount = useRef(meals.length);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingMeal, setEditingMeal] = useState<SavedMeal | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const exportBusy = useRef(false);
+  const performExport = async () => {
+    if (exportBusy.current) return;
+    exportBusy.current = true;
+    setExporting(true);
+    try { await shareExport(getExportData); }
+    catch { Alert.alert('Export unavailable', 'Could not create or share the file. Your logs are unchanged. Check device storage and try again.'); }
+    finally { exportBusy.current = false; setExporting(false); }
+  };
+  const confirmExport = () => Alert.alert('Export your data',
+    'Includes your profile and all saved meals as JSON. Choose Save to Files to keep a copy on your device.',
+    [{ text: 'Cancel', style: 'cancel' }, { text: 'Continue', onPress: () => { void performExport(); } }],
+  );
   const openEditor = (meal: SavedMeal | null = null) => {
     setEditingMeal(meal);
     setEditorOpen(true);
@@ -42,9 +59,14 @@ export function LogScreen() {
       <View style={s.screen}>
         <View style={s.top}>
           <Text style={s.title}>Today</Text>
-          <View style={s.dots}>
-            <View style={s.dot} />
-            <View style={[s.dot, s.dotOn]} />
+          <View style={s.actions}>
+            <Pressable onPress={() => setHistoryOpen(true)} accessibilityRole="button" hitSlop={8}>
+              <Text style={s.actionText}>History</Text>
+            </Pressable>
+            <Pressable onPress={confirmExport} disabled={exporting} accessibilityRole="button"
+              accessibilityLabel="Export profile and all meals" accessibilityState={{ disabled: exporting }} hitSlop={8}>
+              <Text style={s.actionText}>{exporting ? 'Exporting…' : 'Export'}</Text>
+            </Pressable>
           </View>
         </View>
 
@@ -120,6 +142,7 @@ export function LogScreen() {
         </View>
         <Text style={s.cap}>Type your meal · saved offline</Text>
       </View>
+      {historyOpen && <HistoryScreen onClose={() => setHistoryOpen(false)} />}
       {editorOpen && (
         <MealEditor meal={editingMeal} onClose={() => setEditorOpen(false)}
           onSave={(input) => editingMeal ? updateMeal(editingMeal.id, input) : addMeal(input)} />
@@ -134,9 +157,8 @@ const s = StyleSheet.create({
 
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 },
   title: { fontFamily: fonts.uiSemi, fontSize: 17, letterSpacing: -0.2, color: colors.ink },
-  dots: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  dot: { width: 5, height: 5, borderRadius: 3, backgroundColor: colors.rule },
-  dotOn: { width: 14, backgroundColor: colors.inkLow },
+  actions: { flexDirection: 'row', alignItems: 'center', gap: 22 },
+  actionText: { fontFamily: fonts.uiMedium, fontSize: 13, color: colors.protein },
 
   hero: { marginBottom: 20 },
   heroNum: { fontFamily: fonts.monoBold, fontSize: 62, letterSpacing: -3.1, lineHeight: 66, color: colors.protein },

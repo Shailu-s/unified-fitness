@@ -3,6 +3,15 @@ import type { MealInput, SavedMeal } from '../types';
 export const localDateKey = (date: Date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
+export function shiftLocalDay(day: string, offset: number): string {
+  const date = new Date(`${day}T12:00:00`);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !Number.isFinite(date.getTime()) || localDateKey(date) !== day) {
+    throw new Error('Invalid calendar day.');
+  }
+  date.setDate(date.getDate() + offset);
+  return localDateKey(date);
+}
+
 export function validateMealInput(input: MealInput): MealInput {
   const name = input.name.trim();
   if (!name) throw new Error('Enter a meal description.');

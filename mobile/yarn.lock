@@ -634,7 +634,7 @@
   dependencies:
     node-forge "^1.3.3"
 
-"@expo/config-plugins@~57.0.9":
+"@expo/config-plugins@^57.0.9", "@expo/config-plugins@~57.0.9":
   version "57.0.9"
   resolved "https://registry.yarnpkg.com/@expo/config-plugins/-/config-plugins-57.0.9.tgz#3fa42fb565f3662e518f0accc1653a9ac25f73f3"
   integrity sha512-hHgfL1avkCdEvDSw7IwlKwRYYNgcxzbNNMIk6W6lTkJpY0MajinAfeJUS0J+wPCsjUfGbVqOJM+XhPaO5ulUxg==
@@ -1830,7 +1830,7 @@ expo-constants@~57.0.20:
   dependencies:
     "@expo/env" "~2.4.3"
 
-expo-file-system@~57.0.7:
+expo-file-system@57.0.7, expo-file-system@~57.0.7:
   version "57.0.7"
   resolved "https://registry.yarnpkg.com/expo-file-system/-/expo-file-system-57.0.7.tgz#03c4587c0027f65f7e04d88796aefcfe74b03cae"
   integrity sha512-1vkZRadOsIputFDBcclqBa1pO3iXOO6iIsdqJipQWw4V5TSnWgmRTuOF7ro8IzrVue+PHbum++KCG3Tawem4cg==
@@ -1875,6 +1875,15 @@ expo-server@^57.0.3:
   version "57.0.3"
   resolved "https://registry.yarnpkg.com/expo-server/-/expo-server-57.0.3.tgz#02e038a85453f1f4eb00024256b4b3cab949cace"
   integrity sha512-aK+LdKzauHSGmsOStZtyxdzv0zWssCkxTw3m4QuOhfDSJsZaMRTd9O41d8ixU/QfELTbaJ0oRNcF7JFV/7O9YQ==
+
+expo-sharing@57.0.22:
+  version "57.0.22"
+  resolved "https://registry.yarnpkg.com/expo-sharing/-/expo-sharing-57.0.22.tgz#03e630b34986374023693356b7a85bec8dcfdd21"
+  integrity sha512-IWmiz0Dnjd7ifsZ2Gg5XODxb6DQoJ4/H6FofW9bTL9gDjfX2+va8SV1BYVkFvJ8vKQoKR4HgkMCKDCZlrrbKkg==
+  dependencies:
+    "@expo/config-plugins" "^57.0.9"
+    "@expo/config-types" "^57.0.2"
+    "@expo/plist" "^0.8.1"
 
 expo-sqlite@57.0.3:
   version "57.0.3"

@@ -1,4 +1,4 @@
-import type { MealInput, Profile, SavedMeal } from '../types';
+import type { ExportData, MealInput, Profile, SavedMeal } from '../types';
 import { localDateKey, validateMealInput } from './meals.ts';
 
 type Value = string | number | null;
@@ -73,6 +73,21 @@ export class LoggingRepository {
 
   getMeals(day: string): SavedMeal[] {
     return this.db.getAllSync<MealRecord>(`SELECT ${columns} FROM meals WHERE logged_date = ? ORDER BY created_at, rowid`, day).map(toMeal);
+  }
+
+  getMealDays(): string[] {
+    return this.db.getAllSync<{ day: string }>('SELECT DISTINCT logged_date AS day FROM meals ORDER BY logged_date DESC').map((row) => row.day);
+  }
+
+  getExportData(): ExportData {
+    let data: ExportData = { profile: null, meals: [] };
+    this.db.withTransactionSync(() => {
+      data = {
+        profile: this.getProfile(),
+        meals: this.db.getAllSync<MealRecord>(`SELECT ${columns} FROM meals ORDER BY logged_date, created_at, rowid`).map(toMeal),
+      };
+    });
+    return data;
   }
 
   addMeal(input: MealInput, date = new Date()): SavedMeal {

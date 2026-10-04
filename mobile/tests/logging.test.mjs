@@ -165,6 +165,34 @@ test('failed writes report errors and preserve the previous saved record', () =>
   } finally { db.close(); }
 });
 
+test('history returns unique logged days newest first, including older corrected meals', () => {
+  const { db, repository } = open();
+  try {
+    assert.deepEqual(repository.getMealDays(), []);
+    const older = repository.addMeal(input, new Date(2026, 8, 30, 23, 59));
+    const today = repository.addMeal(input, new Date(2026, 9, 5, 12));
+    repository.addMeal(input, new Date(2026, 9, 5, 13));
+    repository.updateMeal(older.id, { ...input, name: 'Corrected old meal' }, new Date(2026, 9, 5, 14));
+    assert.deepEqual(repository.getMealDays(), ['2026-10-05', '2026-09-30']);
+    assert.equal(repository.getMeals('2026-09-30')[0].name, 'Corrected old meal');
+    assert.equal(repository.getMeals('2026-10-05')[0].id, today.id);
+  } finally { db.close(); }
+});
+
+test('export snapshot includes profile and every saved day, preserving corrections and unknown nutrition', () => {
+  const { db, repository } = open();
+  try {
+    assert.deepEqual(repository.getExportData(), { profile: null, meals: [] });
+    repository.saveProfile(profile);
+    const today = repository.addMeal(input, new Date(2026, 9, 5, 12));
+    const yesterday = repository.addMeal(input, new Date(2026, 9, 4, 12));
+    const updated = repository.updateMeal(yesterday.id, { ...input, kcal: 450, protein: 10, fibre: 5 });
+    assert.deepEqual(repository.getExportData(), { profile, meals: [updated, today] });
+    assert.deepEqual(repository.getMeals(today.loggedDate), [today]);
+    assert.deepEqual(repository.getMeals(yesterday.loggedDate), [updated]);
+  } finally { db.close(); }
+});
+
 test('a newer database schema is rejected rather than overwritten', () => {
   const { db, repository } = open();
   try {

@@ -5,7 +5,7 @@ import { mockActivity, mockProfile } from '../data/mock';
 import { LoggingRepository } from '../lib/loggingRepository';
 import { localDateKey, sumNutrition } from '../lib/meals';
 import { computeTargets } from '../lib/targets';
-import type { Activity, MealInput, Profile, SavedMeal, Targets } from '../types';
+import type { Activity, ExportData, MealInput, Profile, SavedMeal, Targets } from '../types';
 
 interface AppState {
   profile: Profile | null;
@@ -18,7 +18,10 @@ interface AppState {
   retryStorage: () => void;
   completeOnboarding: (p: Profile) => void;
   addMeal: (input: MealInput) => void;
-  updateMeal: (id: string, input: MealInput) => void;
+  updateMeal: (id: string, input: MealInput) => SavedMeal;
+  getMealsForDay: (day: string) => SavedMeal[];
+  getMealDays: () => string[];
+  getExportData: () => ExportData;
 }
 
 const AppContext = createContext<AppState | null>(null);
@@ -109,11 +112,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     refreshMeals();
     const saved = requireRepository().updateMeal(id, input);
     setMeals((previous) => previous.map((meal) => meal.id === id ? saved : meal));
+    return saved;
   }, [requireRepository, refreshMeals]);
+
+  const getMealsForDay = useCallback((day: string) => requireRepository().getMeals(day), [requireRepository]);
+  const getMealDays = useCallback(() => requireRepository().getMealDays(), [requireRepository]);
+  const getExportData = useCallback(() => requireRepository().getExportData(), [requireRepository]);
 
   const value: AppState = {
     profile, targets, meals, eaten, activity: mockActivity, ready, storageError, retryStorage,
-    completeOnboarding, addMeal, updateMeal,
+    completeOnboarding, addMeal, updateMeal, getMealsForDay, getMealDays, getExportData,
   };
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

@@ -38,6 +38,11 @@ export interface SavedMeal extends Meal {
 
 export type MealInput = Pick<Meal, 'name' | 'portion' | 'kcal' | 'protein' | 'fibre'>;
 
+export interface ExportData {
+  profile: Profile | null;
+  meals: SavedMeal[];
+}
+
 // A meal before it has an id and a time, e.g. a "usual" or a photo result.
 export type MealTemplate = Omit<Meal, 'id' | 'time'>;
 
