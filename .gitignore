@@ -11,3 +11,5 @@ web-build/
 *.p12
 *.mobileprovision
 *.orig.*
+/mobile/ios/
+/mobile/android/

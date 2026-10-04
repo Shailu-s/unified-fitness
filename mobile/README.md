@@ -24,6 +24,28 @@ Expo Go preview is not full offline cold-start or background-GPS sign-off.
 
 In `app.json`, set `"userInterfaceStyle": "light"` so the paper theme is never inverted.
 
+## Native builds (setup prepared; installation not yet verified)
+
+Expo Go stays available with `yarn start`. Native work uses a separate dev client:
+
+```bash
+yarn native:generate
+yarn ios:device
+yarn android:device
+yarn start:dev
+```
+
+Run platform build commands only after installing full Xcode (iOS) or Android
+Studio/SDK/JDK (Android). iPhone requires trusted device, Developer Mode if required,
+and an Apple Account/Personal Team configured in Xcode. Free provisioning expires
+after seven days; TestFlight/store distribution needs paid membership. Current Mac
+has Command Line Tools only, so no signed native build/install is verified yet.
+
+Generated native trees are ignored; app config/dependencies are source of truth.
+Do not use a clean rebuild over existing native edits without confirmation. The
+standalone app has separate storage from Expo Go; preview records do not migrate
+automatically. GPS and health integrations are not implemented yet.
+
 ## Data
 
 Profile and submitted meals persist locally in SQLite. Typed food logs can have

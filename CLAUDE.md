@@ -93,7 +93,9 @@ unknown nutrition. Slice 1.2 adds separate calendar history and local JSON expor
 (profile + all saved meals) through the native share sheet. Activity remains demo
 data. iPhone Expo Go reopen persistence passed per founder; native history/sharing
 and full offline cold-start verification are pending. GPS, health integration,
-LLM estimates, sync, and billing are not built.
+LLM estimates, sync, and billing are not built. Native dev-client setup and
+non-destructive project generation are prepared; native compilation/install stays
+blocked on full Xcode (currently only Command Line Tools) and Android SDK access.
 
 Build sequence and progress: `docs/build-plan.md`. Architecture reasoning:
 `docs/decisions/001-local-first-logging.md`.
@@ -103,7 +105,11 @@ Build sequence and progress: `docs/build-plan.md`. Architecture reasoning:
 Use existing Yarn 1 lockfile. From `mobile/`:
 
 - Install: `yarn install --frozen-lockfile`
-- Run: `yarn start`
+- Expo Go preview: `yarn start` (explicit Go, port 8082)
+- Native projects: `yarn native:generate` (no install/clean, pinned SDK-57 template)
+- iPhone build: `yarn ios:device` (requires full Xcode and device signing)
+- Android build: `yarn android:device` (requires Android SDK/JDK)
+- Installed dev-client server: `yarn start:dev` (port 8083)
 - Typecheck: `yarn typecheck`
 - Tests: `yarn test` (built-in Node SQLite and TypeScript stripping; verified on Node 25.6.1)
 - iOS bundle: `yarn expo export --platform ios --output-dir dist/ios`

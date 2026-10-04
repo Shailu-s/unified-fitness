@@ -16,7 +16,7 @@ Founder feedback loop: after every slice, run checks, launch a runnable version,
 |---|---|---|---|
 | 1.1 | Durable profile + typed meal logging + corrections | VERIFY | Save offline, kill app, reopen: profile and meal remain. Edits remain. Unknown nutrition is explicit. No seeded meals. |
 | 1.2 | Date-based history + export | VERIFY | Today excludes previous days; browse older logs; export all local records without server access. |
-| 2.1 | Native development builds on both platforms | TODO | Install and launch iOS and Android builds; establish physical-device test matrix. |
+| 2.1 | Native development builds on both platforms | BLOCKED | Install and launch iOS and Android builds; establish physical-device test matrix. |
 | 2.2 | Durable live GPS recording | TODO | Start/pause/resume/finish walk; saved route survives interruption. Test background/locked-screen behavior on a real Xiaomi/Realme and iPhone; document failures and battery impact. |
 | 2.3 | HealthKit / Health Connect adapters | TODO | Shared interface; permissions, denial, unavailable data, and refresh tested separately on each OS. No fabricated readings. Decide cross-platform ring definitions before implementation. |
 | 3.1 | Async text estimates + local/shared cache | TODO | Raw meal saves immediately; uncached offline log waits durably. Extend nutrition to include carbs/fat alongside calories/protein/fibre. Normalize phrasing with explicit portions and versioned cache keys; shared repeated meals avoid new model calls. |
@@ -48,7 +48,7 @@ Implementation checklist (checked means implemented/automated checks passed, not
 - [ ] Physical iOS cold-start/offline test.
 - [ ] Physical Android cold-start/offline test.
 
-## Current slice: 1.2
+## Previous slice: 1.2 verification
 
 - [x] History opens separately from Today; previous/next day and Today shortcut.
 - [x] Saved-day shortcuts and day-specific totals; empty days explicit, no fake records.
@@ -72,6 +72,21 @@ Implementation checklist (checked means implemented/automated checks passed, not
 5. With the project already loaded, disable network and repeat browsing/export to a local Files folder. This is not a full Expo Go offline cold-start test.
 6. Report each pass/fail and any confusing UI. Do not start the next slice before feedback.
 
+## Current slice: 2.1 (native build setup)
+
+- [x] Founder has no paid Apple Developer membership; initial route is local Xcode/Personal Team, not an unapproved subscription.
+- [x] SDK-compatible dev client and Android light-mode helper pinned to releases older than seven days.
+- [x] Explicit Expo Go preview and separate native/device commands; no unrelated server stopped.
+- [x] Non-destructive native generation prepared using pinned SDK-57 template; React versions preserved.
+- [x] Legacy external-storage permissions blocked in source app config; local export does not need them.
+- [x] Final SDK compatibility, typecheck, 24 tests, regenerated native projects, and both platform bundle checks. Generated plist/XML/Podfile syntax checks pass; no native compilation result implied.
+- [ ] Full compatible Xcode installed, first-launch/platform setup completed, and signing configured locally.
+- [ ] Actual iPhone native app compiled, installed, and launched.
+- [ ] Android Studio/SDK/JDK and device/emulator available.
+- [ ] Actual Android native app compiled, installed, and launched.
+
+No native compile/install result claimed. Generated projects and JS bundles are not device builds. GPS follows after a native baseline is usable; health adapters remain a separate slice.
+
 ## Verification log
 
 - 2026-10-05: repository audited. Existing UI only; profile/meals in React state, activity/photo results mocked, text/voice placeholders. No existing roadmap or tests. Dependency installation completed using existing yarn lockfile.
@@ -93,6 +108,8 @@ Implementation checklist (checked means implemented/automated checks passed, not
 
 - 2026-10-05: founder reports back swipe fails from History to food log. Code inspection confirms History used the React Native default full-screen modal without swipe dismissal; slide animation alone is not a gesture. Enabled native page-sheet presentation plus swipe-down dismissal, retaining the Done button and same close callback. Two source-contract tests cover those declared props/callbacks (one failed before the change); they do not prove UIKit gesture behavior. Founder must retest swipe-down on iPhone; sideways edge-back is not introduced.
 - 2026-10-05: founder asks to proceed to next slices and reports no paid Apple Developer membership. Native build route will be local Xcode/personal-team signing for initial iPhone testing, subject to free-provisioning limitations. Mac currently has Command Line Tools only; `xcodebuild -version` fails. Native compilation remains blocked until full Xcode is installed and device signing is available. Export testing remains pending, not assumed passed.
+
+- 2026-10-05: native setup prepared. Dev client/system UI pinned; SDK-57 template pinned. Native iOS/Android projects generated and regenerated without clean/dependency upgrades, with expected legacy-storage removal markers in Android manifest. SDK compatibility, TypeScript, all 24 tests (18 functional data/export tests + 6 source/config contract tests), both JS/Hermes bundles, and plist/XML/Podfile syntax checks passed. App installation, real native compile, swipe-down gesture, GPS, and health integration are not verified or complete. Navigation configuration fix committed separately as `ae8d4f0`.
 
 ### Re-run automated checks
 
@@ -121,12 +138,14 @@ On both iOS and Android, with an installed compatible client/build:
 
 ## Next action
 
-Founder tests slice 1.2 history/export on iPhone using the checklist above. Fix feedback before slice 2.1 (native development builds and device matrix). Do not expand standalone manual nutrition entry; it remains temporary test UI until automatic estimates and optional corrections exist. Full airplane-mode cold-start and Android verification remain required release gates.
+Founder retests History: reload, open History, swipe down from top (or tap Done). Native swipe is not yet signed off. Export remains a backup/data-ownership requirement, not an expanded daily feature.
+
+Prepare slice 2.1 while founder installs full compatible Xcode and opens it once for platform/first-launch setup. Once ready, connect/trust the iPhone, enable Developer Mode if required, and configure the founder's Apple Account/Personal Team in Xcode. Build and install the app, then proceed to live GPS sessions (2.2). Android build/install remains a separate gate; do not mark either platform done from bundle/prebuild checks alone.
 
 ## Blockers / decisions needed later
 
 - iPhone preview launch and reopen persistence confirmed by founder; midnight/offline/Android checks remain pending.
 - Xiaomi/Realme access and standalone iOS/Android builds needed for full offline/native verification.
-- Development signing/build account access for slice 2.1.
+- Slice 2.1: full Xcode and Apple Account/Personal Team signing are unavailable here; founder handles installation and credentials locally. Free provisioning expires after seven days. Android SDK/JDK/device access also required. Existing scaffold bundle ID must be checked during signing; ownership/availability not assumed.
 - Health ring semantics: stand-hour data cannot be assumed equivalent across OSes.
 - LLM provider, backend hosting, auth/sync provider, and paid tier: not selected yet; record decisions when their slices start.
