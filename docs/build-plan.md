@@ -58,7 +58,7 @@ Implementation checklist (checked means implemented/automated checks passed, not
 - [x] Export confirmation and native share-sheet integration; cancel/retry leaves source records intact.
 - [x] SDK-compatible file/sharing dependencies pinned, both older than seven days.
 - [x] 18 automated tests pass in Asia/Kolkata and America/New_York; typecheck, SDK compatibility, iOS/Android bundles pass.
-- [ ] Founder iPhone history navigation and editing test.
+- [ ] Founder iPhone history navigation and editing test, including swipe-down dismissal (not sideways back navigation).
 - [ ] Founder iPhone share-sheet cancel/retry and Save to Files test.
 - [ ] Founder offline browse/export test with the app already loaded.
 - [ ] Physical Android history/share-sheet test.
@@ -90,6 +90,9 @@ Implementation checklist (checked means implemented/automated checks passed, not
 - 2026-10-05: product feedback: no separate custom/manual calorie/protein logging feature needed. Current manual fields are tolerated for testing. Production primary flow remains text/voice → immediate durable save → async LLM/cache estimate. Keep hand-correction of estimates as the existing safety requirement, not mandatory nutrition entry or a standalone manual workflow.
 
 - 2026-10-05: meaningful-commit workflow requested by founder. Logging foundation committed as `ccb0c3c`; no push. Slice 1.2 adds local history and full JSON export without resetting records. 18 tests passed under both India/New York time zones; TypeScript, SDK compatibility, and iOS/Android bundle checks passed. Native share-sheet and Files results still await founder feedback.
+
+- 2026-10-05: founder reports back swipe fails from History to food log. Code inspection confirms History used the React Native default full-screen modal without swipe dismissal; slide animation alone is not a gesture. Enabled native page-sheet presentation plus swipe-down dismissal, retaining the Done button and same close callback. Two source-contract tests cover those declared props/callbacks (one failed before the change); they do not prove UIKit gesture behavior. Founder must retest swipe-down on iPhone; sideways edge-back is not introduced.
+- 2026-10-05: founder asks to proceed to next slices and reports no paid Apple Developer membership. Native build route will be local Xcode/personal-team signing for initial iPhone testing, subject to free-provisioning limitations. Mac currently has Command Line Tools only; `xcodebuild -version` fails. Native compilation remains blocked until full Xcode is installed and device signing is available. Export testing remains pending, not assumed passed.
 
 ### Re-run automated checks
 

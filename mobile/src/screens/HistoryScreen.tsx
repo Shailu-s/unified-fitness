@@ -43,7 +43,7 @@ export function HistoryScreen({ onClose }: { onClose: () => void }) {
   const label = view.day === today ? 'Today' : `${formatDay(date)} ${date.getFullYear()}`;
 
   return (
-    <Modal visible animationType="slide" onRequestClose={onClose}>
+    <Modal visible animationType="slide" presentationStyle="pageSheet" allowSwipeDismissal onRequestClose={onClose}>
       <View style={[s.root, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 12 }]}>
         <View style={s.header}>
           <Text style={s.title}>Meal history</Text>
