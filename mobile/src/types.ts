@@ -24,10 +24,19 @@ export interface Meal {
   name: string;
   time: string; // HH:MM
   portion: string;
-  kcal: number;
-  protein: number;
-  fibre: number;
+  kcal: number | null;
+  protein: number | null;
+  fibre: number | null;
 }
+
+export interface SavedMeal extends Meal {
+  createdAt: string;
+  updatedAt: string;
+  loggedDate: string;
+  nutritionStatus: 'pending' | 'manual';
+}
+
+export type MealInput = Pick<Meal, 'name' | 'portion' | 'kcal' | 'protein' | 'fibre'>;
 
 // A meal before it has an id and a time, e.g. a "usual" or a photo result.
 export type MealTemplate = Omit<Meal, 'id' | 'time'>;

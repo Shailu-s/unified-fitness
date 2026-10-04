@@ -1,12 +1,12 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Meal } from '../types';
 import { colors, fonts, radius } from '../theme';
 
-export function MealRow({ meal, last }: { meal: Meal; last: boolean }) {
+export function MealRow({ meal, last, onPress }: { meal: Meal; last: boolean; onPress: () => void }) {
   return (
-    <View style={[s.row, !last && s.divider]}>
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`Edit ${meal.name}`} style={[s.row, !last && s.divider]}>
       <View style={s.thumb}>
-        <Text style={s.emoji}>{meal.emoji}</Text>
+        <Text style={s.emoji}>{meal.emoji || '•'}</Text>
       </View>
       <View style={s.body}>
         <Text style={s.name} numberOfLines={1}>
@@ -16,8 +16,8 @@ export function MealRow({ meal, last }: { meal: Meal; last: boolean }) {
           {meal.time} · {meal.portion}
         </Text>
       </View>
-      <Text style={s.kcal}>{meal.kcal}</Text>
-    </View>
+      <Text style={s.kcal}>{meal.kcal === null ? 'Not estimated' : `${meal.kcal} kcal`}</Text>
+    </Pressable>
   );
 }
 
@@ -36,5 +36,5 @@ const s = StyleSheet.create({
   body: { flex: 1, minWidth: 0 },
   name: { fontFamily: fonts.uiMedium, fontSize: 14, color: colors.ink },
   sub: { fontFamily: fonts.mono, fontSize: 10.5, color: colors.inkLow, marginTop: 3 },
-  kcal: { fontFamily: fonts.monoBold, fontSize: 14, color: colors.ink },
+  kcal: { maxWidth: 110, textAlign: 'right', fontFamily: fonts.monoBold, fontSize: 12, color: colors.ink },
 });

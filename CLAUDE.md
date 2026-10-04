@@ -87,5 +87,36 @@ Shailendra is the founder; Claude acts as technical co-founder, not an order-tak
 
 ## Status
 
-Pre-code. Stack not yet committed. PDF proposes React Native (Expo) +
-HealthKit/Health Connect + LLM API — a proposal under review, not a decision.
+Expo / React Native / TypeScript app exists under `mobile/`. Slice 1.1 now has
+SQLite-backed profile and typed food logging with manual corrections and explicit
+unknown nutrition. Activity remains demo data. Native cold-start verification is
+pending; GPS, health integration, LLM estimates, sync, and billing are not built.
+
+Build sequence and progress: `docs/build-plan.md`. Architecture reasoning:
+`docs/decisions/001-local-first-logging.md`.
+
+## Development and verification
+
+Use existing Yarn 1 lockfile. From `mobile/`:
+
+- Install: `yarn install --frozen-lockfile`
+- Run: `yarn start`
+- Typecheck: `yarn typecheck`
+- Tests: `yarn test` (built-in Node SQLite and TypeScript stripping; verified on Node 25.6.1)
+- iOS bundle: `yarn expo export --platform ios --output-dir dist/ios`
+- Android bundle: `yarn expo export --platform android --output-dir dist/android`
+
+Bundle checks are not native runtime tests. Physical offline save/edit/force-stop/
+reopen checks are required on both platforms before marking persistence DONE.
+Update the build tracker after each slice; keep unverified device gates unchecked.
+
+## Founder testing workflow
+
+Build one slice, run automated checks, provide a runnable app and a short manual
+checklist, then wait for Shailendra's feedback before starting the next slice.
+Record reported results and fix blockers first. Do not claim manual testing passed
+until the founder reports it. Keep replies short and actionable.
+
+Commit each meaningful feature slice or bug fix after automated checks; avoid
+micro-commits and giant mixed changes. Include the relevant tests and tracker
+updates. Keep unverified manual gates pending. Never push unless explicitly asked.

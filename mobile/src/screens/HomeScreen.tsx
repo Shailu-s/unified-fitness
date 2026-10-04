@@ -24,6 +24,7 @@ export function HomeScreen({ onOpenLog }: { onOpenLog: () => void }) {
           </View>
         </View>
 
+        <Text style={{ fontFamily: fonts.ui, fontSize: 12, color: colors.inkMid, marginTop: 12 }}>Demo activity · health connection coming next</Text>
         <View style={s.gap1} />
 
         <View style={s.stepsLine}>

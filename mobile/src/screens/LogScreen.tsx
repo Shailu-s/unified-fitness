@@ -1,21 +1,27 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CameraIcon, MicIcon, TypeIcon } from '../components/Icons';
 import { MacroBar } from '../components/MacroBar';
 import { MealRow } from '../components/MealRow';
+import { MealEditor } from '../components/MealEditor';
 import { useApp } from '../context/AppContext';
-import { mockPhotoLogs, mockUsuals } from '../data/mock';
+import type { SavedMeal } from '../types';
 import { colors, eyebrow, fonts, gutter } from '../theme';
 
 export function LogScreen() {
-  const { targets, meals, eaten, activity, profile, addMeal } = useApp();
+  const { targets, meals, eaten, addMeal, updateMeal } = useApp();
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
 
   const listRef = useRef<ScrollView>(null);
-  const photoIdx = useRef(0);
   const prevCount = useRef(meals.length);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editingMeal, setEditingMeal] = useState<SavedMeal | null>(null);
+  const openEditor = (meal: SavedMeal | null = null) => {
+    setEditingMeal(meal);
+    setEditorOpen(true);
+  };
 
   // Keep a newly logged meal in view.
   useEffect(() => {
@@ -28,11 +34,8 @@ export function LogScreen() {
   const heroLabel = empty ? 'Protein to eat today' : left === 0 ? 'Protein goal reached' : 'Protein left today';
 
   // Stand-in for a photo scan. A real one would open an editable draft first.
-  const snap = () => {
-    addMeal(mockPhotoLogs[photoIdx.current % mockPhotoLogs.length]);
-    photoIdx.current += 1;
-  };
-  const soon = (what: string) => Alert.alert('Coming soon', `${what} logging is not part of this mock.`);
+  const snap = () => soon('Photo');
+  const soon = (what: string) => Alert.alert('Not available yet', `${what} logging comes later. Type your meal to save it now.`);
 
   return (
     <View style={s.root}>
@@ -60,7 +63,9 @@ export function LogScreen() {
             <MacroBar name="Calories" value={eaten.kcal} goal={targets.kcal} unit="kcal" color={colors.move} />
             <View style={s.burn}>
               <View style={s.burnDot} />
-              <Text style={s.burnText}>{activity.burned} burned today</Text>
+              <Text style={s.burnText}>
+                {eaten.pending > 0 ? `${eaten.pending} not estimated · totals include known nutrition only` : 'Manually entered nutrition · tap a meal to correct'}
+              </Text>
             </View>
           </View>
         </View>
@@ -72,27 +77,12 @@ export function LogScreen() {
           {empty ? (
             <View>
               <Text style={s.emptyLine}>Nothing yet today.</Text>
-              <Text style={s.emptySub}>Snap your plate, or start with a usual:</Text>
-              <View style={s.usuals}>
-                {mockUsuals[profile?.diet ?? 'veg'].map((u) => (
-                  <Pressable
-                    key={u.name}
-                    onPress={() => addMeal(u)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Log ${u.name}, ${u.kcal} calories`}
-                    style={({ pressed }) => [s.usual, pressed && s.usualPressed]}
-                  >
-                    <Text style={s.uEmoji}>{u.emoji}</Text>
-                    <Text style={s.uName}>{u.name}</Text>
-                    <Text style={s.uKcal}>{u.kcal}</Text>
-                  </Pressable>
-                ))}
-              </View>
+              <Text style={s.emptySub}>Type what you ate. Nutrition can wait.</Text>
             </View>
           ) : (
             <ScrollView ref={listRef} showsVerticalScrollIndicator={false} style={s.list}>
               {meals.map((m, i) => (
-                <MealRow key={m.id} meal={m} last={i === meals.length - 1} />
+                <MealRow key={m.id} meal={m} last={i === meals.length - 1} onPress={() => openEditor(m)} />
               ))}
             </ScrollView>
           )}
@@ -102,21 +92,21 @@ export function LogScreen() {
       <View style={[s.bottom, { paddingBottom: 10 + insets.bottom }]}>
         <View style={s.satRow}>
           <Pressable
-            onPress={() => soon('Typed')}
+            onPress={snap}
             accessibilityRole="button"
-            accessibilityLabel="Log by typing"
+            accessibilityLabel="Photo logging not available yet"
             style={({ pressed }) => [s.sat, pressed && s.satPressed]}
           >
-            <TypeIcon color={colors.inkMid} />
+            <CameraIcon color={colors.inkMid} />
           </Pressable>
 
           <Pressable
-            onPress={snap}
+            onPress={() => openEditor()}
             accessibilityRole="button"
-            accessibilityLabel="Log by photo"
+            accessibilityLabel="Log food by typing"
             style={({ pressed }) => [s.shutter, pressed && s.shutterPressed]}
           >
-            <CameraIcon color={colors.paper} />
+            <TypeIcon color={colors.paper} />
           </Pressable>
 
           <Pressable
@@ -128,8 +118,12 @@ export function LogScreen() {
             <MicIcon color={colors.inkMid} />
           </Pressable>
         </View>
-        <Text style={s.cap}>Snap your plate</Text>
+        <Text style={s.cap}>Type your meal · saved offline</Text>
       </View>
+      {editorOpen && (
+        <MealEditor meal={editingMeal} onClose={() => setEditorOpen(false)}
+          onSave={(input) => editingMeal ? updateMeal(editingMeal.id, input) : addMeal(input)} />
+      )}
     </View>
   );
 }
@@ -152,7 +146,7 @@ const s = StyleSheet.create({
   macros: { gap: 11 },
   burn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 7 },
   burnDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.move },
-  burnText: { fontFamily: fonts.mono, fontSize: 11, color: colors.inkLow },
+  burnText: { flex: 1, fontFamily: fonts.mono, fontSize: 11, color: colors.inkMid },
 
   meals: { flex: 1, minHeight: 0 },
   mealsHead: { ...eyebrow, letterSpacing: 1.2, marginBottom: 13 },
@@ -160,24 +154,6 @@ const s = StyleSheet.create({
 
   emptyLine: { fontFamily: fonts.uiSemi, fontSize: 15, letterSpacing: -0.15, color: colors.ink },
   emptySub: { fontFamily: fonts.ui, fontSize: 13, color: colors.inkLow, marginTop: 5 },
-  usuals: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 15 },
-  usual: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 9,
-    paddingLeft: 11,
-    paddingRight: 13,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.rule,
-    borderRadius: 99,
-  },
-  usualPressed: { borderColor: colors.ruleStrong },
-  uEmoji: { fontSize: 15 },
-  uName: { fontFamily: fonts.uiMedium, fontSize: 13, color: colors.ink },
-  uKcal: { fontFamily: fonts.monoMedium, fontSize: 11, color: colors.inkLow },
-
   bottom: { paddingTop: 16, paddingHorizontal: 20, backgroundColor: colors.paper, alignItems: 'center' },
   satRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 26 },
   sat: {

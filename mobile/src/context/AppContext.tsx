@@ -1,42 +1,120 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
-import { SEED_TODAY, SKIP_ONBOARDING, mockActivity, mockMeals, mockProfile } from '../data/mock';
-import { hhmm } from '../lib/format';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { AppState as NativeAppState } from 'react-native';
+import { openDatabaseSync } from 'expo-sqlite';
+import { mockActivity, mockProfile } from '../data/mock';
+import { LoggingRepository } from '../lib/loggingRepository';
+import { localDateKey, sumNutrition } from '../lib/meals';
 import { computeTargets } from '../lib/targets';
-import type { Activity, Meal, MealTemplate, Profile, Targets } from '../types';
+import type { Activity, MealInput, Profile, SavedMeal, Targets } from '../types';
 
 interface AppState {
   profile: Profile | null;
   targets: Targets;
-  meals: Meal[];
-  eaten: { kcal: number; protein: number; fibre: number };
+  meals: SavedMeal[];
+  eaten: { kcal: number; protein: number; fibre: number; pending: number };
   activity: Activity;
+  ready: boolean;
+  storageError: string | null;
+  retryStorage: () => void;
   completeOnboarding: (p: Profile) => void;
-  addMeal: (t: MealTemplate) => void;
+  addMeal: (input: MealInput) => void;
+  updateMeal: (id: string, input: MealInput) => void;
 }
 
 const AppContext = createContext<AppState | null>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [profile, setProfile] = useState<Profile | null>(SKIP_ONBOARDING ? mockProfile : null);
-  const [meals, setMeals] = useState<Meal[]>(SEED_TODAY ? mockMeals : []);
+  const repository = useRef<LoggingRepository | null>(null);
+  const day = useRef(localDateKey(new Date()));
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [meals, setMeals] = useState<SavedMeal[]>([]);
+  const [ready, setReady] = useState(false);
+  const [storageError, setStorageError] = useState<string | null>(null);
+
+  const requireRepository = useCallback(() => {
+    if (!repository.current) throw new Error('Local storage is not ready. Please try again.');
+    return repository.current;
+  }, []);
+
+  const refreshMeals = useCallback((force = false, date = new Date()) => {
+    const today = localDateKey(date);
+    if (force || today !== day.current) {
+      const saved = requireRepository().getMeals(today);
+      day.current = today;
+      setMeals(saved);
+    }
+  }, [requireRepository]);
+
+  const retryStorage = useCallback(() => {
+    setStorageError(null);
+    setReady(false);
+    try {
+      const store = repository.current ?? new LoggingRepository(openDatabaseSync('unified-fitness.db'));
+      store.initialize();
+      const savedProfile = store.getProfile();
+      const today = localDateKey(new Date());
+      const savedMeals = store.getMeals(today);
+      repository.current = store;
+      day.current = today;
+      setProfile(savedProfile);
+      setMeals(savedMeals);
+      setReady(true);
+    } catch {
+      setStorageError('Could not open local data. Your data has not been reset. Retry, or check device storage and app version.');
+    }
+  }, []);
+
+  useEffect(() => { retryStorage(); }, [retryStorage]);
+
+  useEffect(() => {
+    if (!ready) return;
+    const refresh = (force: boolean) => {
+      try { refreshMeals(force); }
+      catch { setStorageError('Could not read your logs. Check device storage and retry.'); }
+    };
+    let timer: ReturnType<typeof setTimeout>;
+    const scheduleMidnight = () => {
+      const now = new Date();
+      const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      timer = setTimeout(() => { refresh(false); scheduleMidnight(); }, midnight.getTime() - now.getTime() + 50);
+    };
+    scheduleMidnight();
+    const subscription = NativeAppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        refresh(true);
+        clearTimeout(timer);
+        scheduleMidnight();
+      }
+    });
+    return () => { clearTimeout(timer); subscription.remove(); };
+  }, [ready, refreshMeals]);
 
   // Falls back to the mock profile only so the value is never null; Main renders after onboarding.
   const targets = useMemo(() => computeTargets(profile ?? mockProfile), [profile]);
+  const eaten = useMemo(() => sumNutrition(meals), [meals]);
 
-  const eaten = useMemo(
-    () =>
-      meals.reduce(
-        (sum, m) => ({ kcal: sum.kcal + m.kcal, protein: sum.protein + m.protein, fibre: sum.fibre + m.fibre }),
-        { kcal: 0, protein: 0, fibre: 0 },
-      ),
-    [meals],
-  );
+  const completeOnboarding = useCallback((p: Profile) => {
+    requireRepository().saveProfile(p);
+    setProfile(p);
+  }, [requireRepository]);
 
-  const addMeal = useCallback((t: MealTemplate) => {
-    setMeals((prev) => [...prev, { ...t, id: Math.random().toString(36).slice(2), time: hhmm(new Date()) }]);
-  }, []);
+  const addMeal = useCallback((input: MealInput) => {
+    const date = new Date();
+    refreshMeals(false, date);
+    const saved = requireRepository().addMeal(input, date);
+    setMeals((previous) => [...previous, saved]);
+  }, [requireRepository, refreshMeals]);
 
-  const value: AppState = { profile, targets, meals, eaten, activity: mockActivity, completeOnboarding: setProfile, addMeal };
+  const updateMeal = useCallback((id: string, input: MealInput) => {
+    refreshMeals();
+    const saved = requireRepository().updateMeal(id, input);
+    setMeals((previous) => previous.map((meal) => meal.id === id ? saved : meal));
+  }, [requireRepository, refreshMeals]);
+
+  const value: AppState = {
+    profile, targets, meals, eaten, activity: mockActivity, ready, storageError, retryStorage,
+    completeOnboarding, addMeal, updateMeal,
+  };
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
 

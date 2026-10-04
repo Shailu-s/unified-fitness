@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FadeIn, OptionRow, Pills, PrimaryButton, ProgressBar, Stepper } from '../components/ui';
 import { useApp } from '../context/AppContext';
@@ -45,8 +45,9 @@ export function OnboardingScreen() {
 
   const next = () => {
     if (!canContinue) return;
-    if (last) completeOnboarding({ ...draft, name: draft.name.trim() });
-    else setStep(step + 1);
+    if (!last) return setStep(step + 1);
+    try { completeOnboarding({ ...draft, name: draft.name.trim() }); }
+    catch { Alert.alert('Profile not saved', 'Check device storage and try again.'); }
   };
 
   return (

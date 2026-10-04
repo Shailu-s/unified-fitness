@@ -6,7 +6,7 @@ import {
   JetBrainsMono_700Bold,
 } from '@expo-google-fonts/jetbrains-mono';
 import { StatusBar } from 'expo-status-bar';
-import { View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppProvider, useApp } from './src/context/AppContext';
 import { MainScreen } from './src/screens/MainScreen';
@@ -14,7 +14,21 @@ import { OnboardingScreen } from './src/screens/OnboardingScreen';
 import { colors } from './src/theme';
 
 function Root() {
-  const { profile } = useApp();
+  const { profile, ready, storageError, retryStorage } = useApp();
+  if (storageError || !ready) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.paper, justifyContent: 'center', padding: 32, gap: 20 }}>
+        {storageError ? (
+          <>
+            <Text accessibilityRole="alert" style={{ color: colors.ink }}>{storageError}</Text>
+            <Pressable onPress={retryStorage} accessibilityRole="button" style={{ padding: 16 }}>
+              <Text style={{ color: colors.protein }}>Retry local storage</Text>
+            </Pressable>
+          </>
+        ) : <ActivityIndicator accessibilityLabel="Opening saved logs" color={colors.ink} />}
+      </View>
+    );
+  }
   return profile ? <MainScreen /> : <OnboardingScreen />;
 }
 

@@ -2,25 +2,35 @@
 
 ## Run it
 
-```bash
-npx create-expo-app@latest unified-fitness --template blank-typescript
-cd unified-fitness
-npx expo install react-native-svg react-native-safe-area-context expo-font \
-  @expo-google-fonts/inter @expo-google-fonts/jetbrains-mono
-```
-
-Copy `App.tsx` and `src/` from this zip over the generated ones, then:
+From this existing `mobile/` directory:
 
 ```bash
-npx expo start
+yarn install --frozen-lockfile
+yarn start
 ```
+
+Checks: `yarn typecheck`, `yarn test`. Tests use Node's built-in SQLite and
+TypeScript stripping (verified on Node 25.6.1). SDK compatibility checks pass;
+physical iOS/Android offline restart checks remain pending. See `../docs/build-plan.md`.
+
+For the first iPhone preview, install Expo Go compatible with SDK 57. Sign in to
+Expo Go and run `yarn expo login` on the Mac using the same Expo account. Keep both
+on the same Wi-Fi, run `yarn expo start --go --lan`, then scan the terminal QR with
+the iPhone camera. Allow Local Network access. Port 8081 may be occupied by Docker;
+accept another port instead of stopping unrelated services.
+
+Test onboarding, typed meal save, manual correction, and reopening the project.
+Expo Go preview is not full offline cold-start or background-GPS sign-off.
 
 In `app.json`, set `"userInterfaceStyle": "light"` so the paper theme is never inverted.
 
-## Dev switches (`src/data/mock.ts`)
+## Data
 
-- `SKIP_ONBOARDING = true` jumps straight to Home as the mock user.
-- `SEED_TODAY = false` starts the Log screen empty, so you see the empty state and the "usuals".
+Profile and submitted meals persist locally in SQLite. Typed food logs can have
+unknown nutrition; tap a saved meal to add or correct manual values. The provider
+does not seed mock meals or use the old onboarding/seed switches. Activity rings
+remain explicitly labeled demo data. Model estimation, photo, and voice are not
+implemented yet.
 
 ## Structure
 
