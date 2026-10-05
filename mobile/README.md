@@ -58,14 +58,31 @@ still needs device verification. Activity rings remain explicitly labeled demo d
 Nutrition foundation uses additive schema v2: jobs persist with meals, worker leases
 and revisions reject stale results, and generic estimates have a versioned local
 cache. Unknown carbs/fat show a dash. New logs have no custom-macro entry requirement;
-existing values/future estimates can be corrected. Live model worker, photo capture,
-upload/vision, and voice are not implemented yet. Test values exist only in tests.
+existing values/future estimates can be corrected. A gated foreground Supabase worker
+and bounded Gemini adapter are prepared; neither is live by default. Photo capture,
+upload/vision and voice are not implemented yet. Test values exist only in tests.
 
-Supabase is selected but not connected. Use `mobile/.env.example` as the template
+Supabase public config is validated, but remote schema/function deployment is pending.
+Use `mobile/.env.example` as the template
 for `mobile/.env.local`; fill only the publishable/legacy anon client key there.
 Project URL is public. Service-role and model keys belong only in backend secrets,
 never EXPO_PUBLIC variables or chat. Dotenv files are ignored; do not reset or
-uninstall Expo Go to test the migration.
+uninstall Expo Go to test the migration. Keep EXPO_PUBLIC_NUTRITION_ENABLED=false
+until deployment/guest-auth/model-budget setup is approved. `yarn check:config`
+validates public credentials without printing them; normal Expo scripts run it first.
+
+Backend code: `supabase/migrations/` and `supabase/functions/nutrition-estimate/`.
+The function retains JWT verification, checks user identity, and serves shared cache
+or coalesces durable requests. Monthly model budget defaults zero; model calls also
+require server-only GEMINI_API_KEY, NUTRITION_MODEL, MODEL_MAX_CALL_USD and explicit
+MODEL_API_ENABLED=true. Maximum call cost must be a reviewed upper bound for the
+chosen model/token limits. Do not turn flags on before privacy/budget approval.
+
+Backend checks: `npm exec --yes --package=deno@2.9.6 -- deno check
+supabase/functions/nutrition-estimate/index.ts` from repo root. Postgres tests use
+`supabase/tests/bootstrap.sql`, migration, then `supabase/tests/nutrition.sql` in an
+isolated fresh database, never on the hosted project. Bootstrap files emulate
+Supabase roles/auth/storage for tests and must not be applied to production.
 
 ## Structure
 

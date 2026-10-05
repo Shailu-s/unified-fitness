@@ -218,14 +218,16 @@ export class LoggingRepository {
     return this.db.getAllSync<JobRecord>(`SELECT ${jobColumns} FROM nutrition_jobs ORDER BY created_at, rowid`).map(toJob);
   }
 
-  claimNutritionJob(date = new Date()): NutritionJob | null {
+  claimNutritionJob(date = new Date(), inputTypes: ('text' | 'photo')[] = ['text', 'photo']): NutritionJob | null {
+    if (!inputTypes.length) return null;
     let claimed: NutritionJob | null = null;
     const timestamp = date.toISOString();
     this.db.withTransactionSync(() => {
       while (true) {
         const record = this.db.getFirstSync<JobRecord>(`SELECT ${jobColumns} FROM nutrition_jobs
-          WHERE (state IN ('queued', 'failed') AND next_attempt_at <= ?) OR (state = 'running' AND lease_until <= ?)
-          ORDER BY created_at, rowid LIMIT 1`, timestamp, timestamp);
+          WHERE ((state IN ('queued', 'failed') AND next_attempt_at <= ?) OR (state = 'running' AND lease_until <= ?))
+            AND json_extract(input_json, '$.inputType') IN (${inputTypes.map(() => '?').join(',')})
+          ORDER BY created_at, rowid LIMIT 1`, timestamp, timestamp, ...inputTypes);
         if (!record) return;
         const meal = this.getMeal(record.mealId);
         if (meal.revision !== record.revision || meal.nutritionStatus === 'manual') {
@@ -270,6 +272,12 @@ export class LoggingRepository {
       failed = true;
     });
     return failed;
+  }
+
+  deferNutritionJob(id: string, leaseToken: string | null, seconds: number, date = new Date()) {
+    if (!Number.isFinite(seconds) || seconds < 1 || seconds > 3600) throw new Error('Invalid retry delay.');
+    this.db.runSync("UPDATE nutrition_jobs SET state = 'queued', next_attempt_at = ?, lease_token = NULL, lease_until = NULL, error_code = NULL, updated_at = ? WHERE id = ? AND state = 'running' AND lease_token = ?",
+      new Date(date.getTime() + seconds * 1000).toISOString(), date.toISOString(), id, leaseToken);
   }
 
   retryNutritionJob(mealId: string, date = new Date()) {

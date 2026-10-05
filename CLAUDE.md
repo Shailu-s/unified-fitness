@@ -98,9 +98,13 @@ and full offline cold-start verification are pending. GPS, health integration,
 live LLM estimates, sync, and billing are not built. Nutrition foundation now uses
 additive SQLite schema v2: full macro fields, text/photo metadata, revisions,
 durable jobs with leases/retries, local cache and late-result/correction protection.
-Supabase is the approved backend; live deployment/model budget and photo capture
-are still pending. Never read or commit dotenv values; mobile configuration may
-contain only public Supabase URL/publishable key, never service-role/model secrets.
+Supabase backend schema/authenticated Edge API and a gated mobile worker are
+prepared and locally tested. Remote deployment, model/privacy/budget setup and
+photo capture remain pending. Anonymous auth was disabled on the owner project
+at the last read-only check. Keep EXPO_PUBLIC_NUTRITION_ENABLED=false and server
+MODEL_API_ENABLED unset/false until approved setup; monthly budget defaults zero.
+Never dump or commit dotenv values; mobile configuration may contain only public
+Supabase URL/publishable key, never service-role/model secrets.
 Native dev-client setup and
 non-destructive project generation are prepared; native compilation/install stays
 blocked on full Xcode (currently only Command Line Tools) and Android SDK access.
@@ -118,6 +122,7 @@ Use existing Yarn 1 lockfile. From `mobile/`:
 - iPhone build: `yarn ios:device` (requires full Xcode and device signing)
 - Android build: `yarn android:device` (requires Android SDK/JDK)
 - Installed dev-client server: `yarn start:dev` (port 8083)
+- Public-config guard: `yarn check:config` (normal Expo scripts run it before bundling)
 - Typecheck: `yarn typecheck`
 - Tests: `yarn test` (built-in Node SQLite and TypeScript stripping; verified on Node 25.6.1)
 - iOS bundle: `yarn expo export --platform ios --output-dir dist/ios`

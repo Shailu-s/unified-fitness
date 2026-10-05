@@ -5,6 +5,7 @@ import { colors, fonts, gutter } from '../theme';
 import { mealDraftInput } from '../lib/mealDraft';
 import type { MealInput, SavedMeal } from '../types';
 import { PrimaryButton } from './ui';
+import { useApp } from '../context/AppContext';
 
 export function MealEditor({ meal, onSave, onClose }: {
   meal: SavedMeal | null;
@@ -12,6 +13,7 @@ export function MealEditor({ meal, onSave, onClose }: {
   onClose: () => void;
 }) {
   const insets = useSafeAreaInsets();
+  const { estimatesEnabled } = useApp();
   const [name, setName] = useState(meal?.name ?? '');
   const [portion, setPortion] = useState(meal?.portion ?? '');
   const [kcal, setKcal] = useState(meal?.kcal?.toString() ?? '');
@@ -47,7 +49,7 @@ export function MealEditor({ meal, onSave, onClose }: {
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.body}>
           <Field label="What did you eat?" value={name} onChangeText={setName} placeholder="2 roti, 1 katori dal, rice" autoFocus multiline />
           <Field label="Portion (optional)" value={portion} onChangeText={setPortion} placeholder="1 katori, 2 medium roti" />
-          <Text style={s.help}>Saved offline immediately. Unestimated meals are queued; live estimates are waiting for backend setup.</Text>
+          <Text style={s.help}>{estimatesEnabled ? 'Saved offline immediately. Estimates arrive when connected; portion edits trigger a new estimate.' : 'Saved offline immediately. Unestimated meals are queued; live estimates are waiting for backend setup.'}</Text>
           {meal?.assumptions?.length ? <Text style={s.help}>Estimate assumptions: {meal.assumptions.join(' · ')}</Text> : null}
           {meal && meal.nutritionStatus !== 'pending' && (
             <Pressable onPress={() => setShowNutrition(!showNutrition)} accessibilityRole="button" accessibilityState={{ expanded: showNutrition }} style={s.toggle}>

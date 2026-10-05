@@ -5,6 +5,8 @@ import { mockActivity, mockProfile } from '../data/mock';
 import { LoggingRepository } from '../lib/loggingRepository';
 import { localDateKey, sumNutrition } from '../lib/meals';
 import { computeTargets } from '../lib/targets';
+import { nutritionBackendConfig, requestNutrition } from '../lib/supabaseNutrition';
+import { processNutritionJobs } from '../lib/nutritionWorker';
 import type { Activity, ExportData, MealInput, Profile, SavedMeal, Targets } from '../types';
 
 interface AppState {
@@ -22,6 +24,7 @@ interface AppState {
   getMealsForDay: (day: string) => SavedMeal[];
   getMealDays: () => string[];
   getExportData: () => ExportData;
+  estimatesEnabled: boolean;
 }
 
 const AppContext = createContext<AppState | null>(null);
@@ -33,6 +36,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [meals, setMeals] = useState<SavedMeal[]>([]);
   const [ready, setReady] = useState(false);
   const [storageError, setStorageError] = useState<string | null>(null);
+  const processing = useRef(false);
+  const active = useRef(NativeAppState.currentState === 'active');
+  const alive = useRef(true);
+  const estimatesEnabled = useMemo(() => {
+    try { return nutritionBackendConfig()?.enabled ?? false; } catch { return false; }
+  }, []);
 
   const requireRepository = useCallback(() => {
     if (!repository.current) throw new Error('Local storage is not ready. Please try again.');
@@ -67,10 +76,27 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  useEffect(() => { retryStorage(); }, [retryStorage]);
+  const kickEstimates = useCallback(() => {
+    if (!estimatesEnabled || !repository.current || processing.current || !active.current) return;
+    processing.current = true;
+    void processNutritionJobs(repository.current, requestNutrition, () => {
+      if (alive.current) refreshMeals(true);
+    }, () => alive.current && active.current).catch(() => {
+      if (alive.current) setStorageError('Could not process local estimation jobs. Your saved meals remain intact.');
+    }).finally(() => { processing.current = false; });
+  }, [estimatesEnabled, refreshMeals]);
+
+  useEffect(() => {
+    alive.current = true;
+    retryStorage();
+    return () => { alive.current = false; };
+  }, [retryStorage]);
 
   useEffect(() => {
     if (!ready) return;
+    active.current = NativeAppState.currentState === 'active';
+    kickEstimates();
+    const workerTimer = setInterval(kickEstimates, 15000);
     const refresh = (force: boolean) => {
       try { refreshMeals(force); }
       catch { setStorageError('Could not read your logs. Check device storage and retry.'); }
@@ -83,14 +109,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
     scheduleMidnight();
     const subscription = NativeAppState.addEventListener('change', (state) => {
+      active.current = state === 'active';
       if (state === 'active') {
         refresh(true);
+        kickEstimates();
         clearTimeout(timer);
         scheduleMidnight();
       }
     });
-    return () => { clearTimeout(timer); subscription.remove(); };
-  }, [ready, refreshMeals]);
+    return () => { clearTimeout(timer); clearInterval(workerTimer); subscription.remove(); };
+  }, [ready, refreshMeals, kickEstimates]);
 
   // Falls back to the mock profile only so the value is never null; Main renders after onboarding.
   const targets = useMemo(() => computeTargets(profile ?? mockProfile), [profile]);
@@ -106,14 +134,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     refreshMeals(false, date);
     const saved = requireRepository().addMeal(input, date);
     setMeals((previous) => [...previous, saved]);
-  }, [requireRepository, refreshMeals]);
+    kickEstimates();
+  }, [requireRepository, refreshMeals, kickEstimates]);
 
   const updateMeal = useCallback((id: string, input: MealInput) => {
     refreshMeals();
     const saved = requireRepository().updateMeal(id, input);
     setMeals((previous) => previous.map((meal) => meal.id === id ? saved : meal));
+    kickEstimates();
     return saved;
-  }, [requireRepository, refreshMeals]);
+  }, [requireRepository, refreshMeals, kickEstimates]);
 
   const getMealsForDay = useCallback((day: string) => requireRepository().getMeals(day), [requireRepository]);
   const getMealDays = useCallback(() => requireRepository().getMealDays(), [requireRepository]);
@@ -121,7 +151,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const value: AppState = {
     profile, targets, meals, eaten, activity: mockActivity, ready, storageError, retryStorage,
-    completeOnboarding, addMeal, updateMeal, getMealsForDay, getMealDays, getExportData,
+    completeOnboarding, addMeal, updateMeal, getMealsForDay, getMealDays, getExportData, estimatesEnabled,
   };
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
