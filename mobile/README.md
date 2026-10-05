@@ -61,8 +61,10 @@ cache. Unknown carbs/fat show a dash. New logs have no custom-macro entry requir
 existing values/future estimates can be corrected. A gated foreground Supabase worker
 and bounded OpenAI adapter are implemented. Production defaults remain off;
 founder development preview is enabled under an approved US$1 total test cap.
-Photo capture/upload/vision and voice are not implemented yet. Seed/test food data
-is not inserted into local app logs.
+Photo capture/gallery, private-upload/vision and in-place result-screen code is
+implemented on the feature branch; production photo flags remain off until review.
+Camera and model quality require physical-device testing. Voice remains unavailable.
+Seed/test food data is not inserted into local app logs.
 
 Supabase public config is validated; migration and nutrition-estimate v1 are deployed.
 Hosted permission/JWT checks pass. Guest auth and live OpenAI text smoke now pass;
@@ -86,7 +88,18 @@ MODEL_API_ENABLED=true. Maximum call cost must be a reviewed upper bound for the
 chosen model/token limits. Current snapshot: gpt-5-mini-2025-08-07 (code default).
 Adapter uses strict JSON and store=false; abuse-monitoring retention may still apply.
 Do not turn flags on before privacy/budget approval. Inline image adapter support
-is prepared; camera/gallery/private-upload ingress is still a follow-up.
+is wired through owned JPEG/digest/private upload ingress on the photo branch.
+To activate after reviewed deployment: server PHOTO_API_ENABLED=true, client
+EXPO_PUBLIC_PHOTO_ESTIMATES_ENABLED=true. Optional EXPO_PUBLIC_NUTRITION_FUNCTION
+selects a same-project preview function. Existing production text function is not
+changed by merely checking out this branch. Photo outputs cap at 4096 tokens and
+reserve at least $0.02; total testing cap remains $1. Typed text stays at 2048.
+
+Photo processing consent explains upstream retention/portion limitations. Local
+photos are sanitized/re-encoded and stored in app documents. Uploads are deleted
+after processing attempts; orphans older than a day are pruned on next owner sync,
+not guaranteed removed during inactivity. Remove local photo keeps logged nutrition.
+JSON exports include photo references/identified foods but do not back up binary media.
 
 Backend checks: `npm exec --yes --package=deno@2.9.6 -- deno check
 supabase/functions/nutrition-estimate/index.ts` from repo root. Postgres tests use

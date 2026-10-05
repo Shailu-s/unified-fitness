@@ -205,14 +205,22 @@ test('expired lease recovers the same job and ignores the earlier worker respons
   assert.equal(repository.completeNutritionJob(second.id, second.leaseToken, estimate, later), true);
 }));
 
-test('failed job has durable retry delay; manual retry does not create a duplicate', () => withStore(({ repository }) => {
+test('transient retries are bounded and manual retry retains idempotent job identity', () => withStore(({ repository }) => {
   const meal = repository.addMeal(input, now);
   const job = repository.claimNutritionJob(now);
   assert.equal(repository.failNutritionJob(job.id, job.leaseToken, 'network', now), true);
-  assert.equal(repository.getMeals(meal.loggedDate)[0].estimateState, 'failed');
+  assert.equal(repository.getMeals(meal.loggedDate)[0].estimateState, 'queued');
   assert.equal(repository.claimNutritionJob(now), null);
-  repository.retryNutritionJob(meal.id, now);
-  const retry = repository.claimNutritionJob(now);
+  for (const offset of [31000,92000]) {
+    const date = new Date(now.getTime()+offset);
+    const retry = repository.claimNutritionJob(date);
+    repository.failNutritionJob(retry.id,retry.leaseToken,'network',date);
+  }
+  assert.equal(repository.getMeals(meal.loggedDate)[0].estimateState,'failed');
+  const later = new Date(now.getTime()+3600000);
+  assert.equal(repository.claimNutritionJob(later),null);
+  repository.retryNutritionJob(meal.id,later);
+  const retry = repository.claimNutritionJob(later);
   assert.equal(retry.id, job.id);
   assert.equal(repository.getNutritionJobs().length, 1);
 }));

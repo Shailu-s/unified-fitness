@@ -119,7 +119,7 @@ test('OpenAI image input is inline and bounded; URLs and unsupported image forma
   let observed;
   const model = createOpenAIEstimator('fake', OPENAI_NUTRITION_MODEL, async (_url, options) => {
     observed = JSON.parse(options.body);
-    return Response.json(completed([outputText()]));
+    return Response.json(completed([{ type: 'output_text', text: JSON.stringify({ ...estimate, is_food: true, foods: [{ name: 'Roti', portion: '2 medium' }] }) }]));
   });
   await model(input, { mimeType: 'image/jpeg', base64: 'AAEC' });
   assert.equal(observed.input[0].content[1].type, 'input_image');

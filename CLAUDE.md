@@ -19,7 +19,7 @@ and scope below supersede it** (see "Deviations from the PDF").
 | Platforms | **Both iOS and Android simultaneously.** Founder decision, made against a recommendation to ship Android-first. |
 | Live GPS | **In V1.** Founder decision — "Strava-grade" is core to the pitch; imported-only cardio is not acceptable. |
 | Food data | **LLM estimates everything**, no curated seed DB. Founder decision. Caching is mandatory (see below). |
-| Next complete phase | **Text + photo nutrition estimates together, before real rings/GPS.** Founder priority. Photo uncertainty remains explicit; no promise of precise calories from images. |
+| Next complete phase | **Photo capture/estimation is the flagship, with typing fallback, before rings/GPS.** Founder priority. Photo uncertainty stays explicit; no promise of precise calories from images. |
 | Goal | Real business, not a portfolio piece. |
 
 ## Deviations from the PDF (deliberate)
@@ -107,7 +107,10 @@ configured only for the current UTC month; future months default zero. Server li
 flag is on with $0.01 conservative per-call reservation (not actual invoice spend).
 Mobile dev-only override enables foreground processing; production defaults stay
 off. Do not raise/renew budget without approval. Actual phone correction/offline/
-reopen, Android, photo capture and broader meal accuracy remain unverified.
+reopen, Android and broader meal accuracy remain unverified. Photo capture/private
+upload/vision/result-screen code is implemented on the feature branch, with
+production photo inference gated off until review/deployment. Native photo QA and
+reference-meal evaluation remain required.
 Never dump or commit dotenv values; mobile configuration may contain only public
 Supabase URL/publishable key, never service-role/model secrets. OpenAI is the
 selected inference provider; backend-only OPENAI_API_KEY, pinned initial model
@@ -146,6 +149,10 @@ Build one slice, run automated checks, provide a runnable app and a short manual
 checklist, then wait for Shailendra's feedback before starting the next slice.
 Record reported results and fix blockers first. Do not claim manual testing passed
 until the founder reports it. Keep replies short and actionable.
+
+The founder approved publishing the prior 11 local foundation commits to main.
+Future features use branches and reviewable PRs against main; do not merge or
+push future feature work directly to main. Photo work uses feat/photo-nutrition.
 
 Commit each meaningful feature slice or bug fix after automated checks; avoid
 micro-commits and giant mixed changes. Include the relevant tests and tracker

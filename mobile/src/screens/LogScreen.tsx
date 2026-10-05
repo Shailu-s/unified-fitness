@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CameraIcon, MicIcon, TypeIcon } from '../components/Icons';
 import { MacroBar } from '../components/MacroBar';
@@ -9,6 +9,9 @@ import { useApp } from '../context/AppContext';
 import { shareExport } from '../lib/shareExport';
 import { num } from '../lib/format';
 import { HistoryScreen } from './HistoryScreen';
+import { MealResultScreen } from './MealResultScreen';
+import { pickMealPhoto, removeLocalPhoto } from '../lib/photoFiles';
+import * as SecureStore from 'expo-secure-store';
 import type { SavedMeal } from '../types';
 import { colors, eyebrow, fonts, gutter } from '../theme';
 
@@ -23,6 +26,9 @@ export function LogScreen() {
   const [editingMeal, setEditingMeal] = useState<SavedMeal | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [resultId, setResultId] = useState<string | null>(null);
+  const [preparingPhoto, setPreparingPhoto] = useState(false);
+  const photoBusy = useRef(false);
   const exportBusy = useRef(false);
   const performExport = async () => {
     if (exportBusy.current) return;
@@ -52,7 +58,30 @@ export function LogScreen() {
   const heroLabel = empty ? 'Protein to eat today' : left === 0 ? 'Protein goal reached' : 'Protein left today';
 
   // Stand-in for a photo scan. A real one would open an editable draft first.
-  const snap = () => soon('Photo');
+  const snap = async (source: 'camera' | 'gallery' = 'camera') => {
+    if (photoBusy.current) return;
+    photoBusy.current = true;
+    try {
+      if (await SecureStore.getItemAsync('photo-processing-consent-v1') !== 'yes') {
+        const accepted = await new Promise<boolean>((resolve) => Alert.alert('Approximate photo estimates',
+          'Food photos are saved privately on this phone, then sent via private storage to OpenAI for an estimate. Avoid faces or personal information. Uploads are removed after processing; interrupted uploads are removed on next sync. OpenAI API training is opt-in, but abuse-monitoring retention may apply. Photos cannot reveal hidden oil or exact portions.',
+          [{ text: 'Cancel', style: 'cancel', onPress: () => resolve(false) }, { text: 'Continue', onPress: () => resolve(true) }],
+          { cancelable: true, onDismiss: () => resolve(false) }));
+        if (!accepted) return;
+        await SecureStore.setItemAsync('photo-processing-consent-v1', 'yes');
+      }
+      setPreparingPhoto(true);
+      const uri = await pickMealPhoto(source);
+      if (!uri) return;
+      try {
+        const meal = addMeal({ name: '', portion: '', kcal: null, protein: null, fibre: null, inputType: 'photo', photoUri: uri });
+        setResultId(meal.id);
+      } catch (error) { removeLocalPhoto(uri); throw error; }
+    } catch (error) {
+      Alert.alert('Photo not saved', error instanceof Error ? error.message : 'Could not prepare the photo. Try again.',
+        [{ text: 'OK' }, { text: 'Device settings', onPress: () => { void Linking.openSettings(); } }]);
+    } finally { photoBusy.current = false; setPreparingPhoto(false); }
+  };
   const soon = (what: string) => Alert.alert('Not available yet', `${what} logging comes later. Type your meal to save it now.`);
 
   return (
@@ -106,7 +135,7 @@ export function LogScreen() {
           ) : (
             <ScrollView ref={listRef} showsVerticalScrollIndicator={false} style={s.list}>
               {meals.map((m, i) => (
-                <MealRow key={m.id} meal={m} last={i === meals.length - 1} onPress={() => openEditor(m)} />
+                <MealRow key={m.id} meal={m} last={i === meals.length - 1} onPress={() => setResultId(m.id)} />
               ))}
             </ScrollView>
           )}
@@ -116,12 +145,13 @@ export function LogScreen() {
       <View style={[s.bottom, { paddingBottom: 10 + insets.bottom }]}>
         <View style={s.satRow}>
           <Pressable
-            onPress={snap}
+            onPress={() => { void snap(); }}
+            disabled={preparingPhoto}
             accessibilityRole="button"
-            accessibilityLabel="Photo logging not available yet"
+            accessibilityLabel="Photograph a meal"
             style={({ pressed }) => [s.sat, pressed && s.satPressed]}
           >
-            <CameraIcon color={colors.inkMid} />
+            {preparingPhoto ? <ActivityIndicator color={colors.inkMid} /> : <CameraIcon color={colors.inkMid} />}
           </Pressable>
 
           <Pressable
@@ -142,12 +172,17 @@ export function LogScreen() {
             <MicIcon color={colors.inkMid} />
           </Pressable>
         </View>
-        <Text style={s.cap}>Type your meal · saved offline</Text>
+        <Text style={s.cap}>Camera or text · saved offline</Text>
+        <Pressable onPress={() => { void snap('gallery'); }} disabled={preparingPhoto} accessibilityRole="button"><Text style={s.actionText}>Choose a meal photo</Text></Pressable>
       </View>
       {historyOpen && <HistoryScreen onClose={() => setHistoryOpen(false)} />}
+      {resultId && !editorOpen && <MealResultScreen id={resultId} onClose={() => setResultId(null)} />}
       {editorOpen && (
         <MealEditor meal={editingMeal} onClose={() => setEditorOpen(false)}
-          onSave={(input) => editingMeal ? updateMeal(editingMeal.id, input) : addMeal(input)} />
+          onSave={(input) => {
+            const meal = editingMeal ? updateMeal(editingMeal.id, input) : addMeal(input);
+            setResultId(meal.id);
+          }} />
       )}
     </View>
   );

@@ -25,7 +25,11 @@ export function validateEstimate(value: unknown): NutritionEstimate {
     estimate.assumptions.some((item) => typeof item !== 'string' || item.length > 300)) {
     throw new Error('Invalid estimate assumptions.');
   }
+  if (estimate.foods !== undefined && (!Array.isArray(estimate.foods) || estimate.foods.length > 12 ||
+    estimate.foods.some((food) => !food || typeof food.name !== 'string' || !food.name.trim() || food.name.length > 100 ||
+      typeof food.portion !== 'string' || !food.portion.trim() || food.portion.length > 160))) throw new Error('Invalid identified foods.');
   return {
+    ...(estimate.foods ? { foods: estimate.foods.map((food: { name: string; portion: string }) => ({ name: food.name.trim(), portion: food.portion.trim() })) } : {}),
     version: 1, model: estimate.model.trim(), kcal: estimate.kcal as number, protein: estimate.protein as number,
     carbs: estimate.carbs as number, fat: estimate.fat as number, fibre: estimate.fibre as number,
     assumptions: [...estimate.assumptions],

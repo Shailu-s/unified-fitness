@@ -42,6 +42,8 @@ export interface SavedMeal extends Meal {
   assumptions: string[];
   estimateModel: string | null;
   estimateState: 'queued' | 'running' | 'failed' | 'estimated' | 'manual';
+  foods: { name: string; portion: string }[];
+  estimateError: string | null;
 }
 
 export type MealInput = Pick<Meal, 'name' | 'portion' | 'kcal' | 'protein' | 'fibre'> & {
@@ -60,6 +62,7 @@ export interface NutritionEstimate {
   fat: number;
   fibre: number;
   assumptions: string[];
+  foods?: { name: string; portion: string }[];
 }
 
 export interface NutritionJob {

@@ -5,6 +5,11 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "plugins": [["expo-image-picker", {
+      "cameraPermission": "Allow Unified Fitness to photograph your meals.",
+      "photosPermission": "Allow Unified Fitness to choose a meal photo.",
+      "microphonePermission": false
+    }]],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.ritik.unifiedfitness"

@@ -20,7 +20,7 @@ Founder approves nutrition before rings and explicitly includes photo estimation
 |---|---|---|
 | N1 — VERIFY | Shared nutrition data/queue/cache foundation | Additive migration, full-macro/unknown fields, text/photo input metadata, durable jobs/leases, local cache, revision/correction protection and status UI implemented. Photo metadata is tested; actual capture/durable files are a subsequent N3 gate. Founder migration/reopen check pending. |
 | N2 — VERIFY ON PHONE | Backend + typed estimates | Live guest auth/OpenAI response, idempotent retry and normalized same/cross-user shared cache pass. One ready cache item/five distinct completed requests consume only one $0.01 reservation. US$1 total test cap approved; backend and local development worker enabled. Founder iPhone correction/offline/reopen and Android checks pending; nutrition accuracy not validated. |
-| N3 | Photo capture/gallery + vision estimates | SDK-compatible photo input, resizing/metadata removal, private uploads, food/portion extraction, shared nutrition pipeline, editable visible assumptions. New photos may require a vision call even when nutrition is cached. Raw photos never enter the shared meal cache. |
+| N3 — PR / DEVICE QA | Flagship camera/gallery + vision results | Implemented on feat/photo-nutrition: camera/system gallery, owned durable JPEG/EXIF stripping, private owner/job/digest uploads, non-food rejection, recognized foods/portion guesses, result screen/loading, correction/removal, terminal vs transient retry states. Photo API/client flags default off until reviewed deployment. Automated tests/bundles pass; actual camera/permissions/native persistence/live vision quality unverified. |
 | N4 | Corrections, privacy, reliability and quality | Portion/food correction UX; late results cannot overwrite edits. Test offline capture, kill/reopen, denied camera access, model failure/timeouts, duplicate jobs, invalid outputs, image-size limits, and both OSes. Evaluate Indian mixed meals against known-portion/reference cases; do not claim validated photo accuracy without evidence. Update history/export for new nutrition data and document photo retention/export policy. |
 
 Complete N1–N4 and founder checkpoints before moving to real rings/GPS. Each slice remains a meaningful commit/test handoff rather than one giant feature commit. Voice later feeds the same nutrition pipeline.
@@ -131,6 +131,8 @@ No native compile/install result claimed. Generated projects and JS bundles are 
 
 ## Verification log
 
+- Founder reports live text save→estimate works, but paneer/roti repeats produced 808/785 kcal and an interim failure. Hosted inspection: two distinct cache keys, one matching exact input “2 roti and 1 paneer curry”; one model_failed request; $0.04 reserved under original $1 cap. Need exact original description/portion fields before asserting equivalent-input cache failure. Deterministic worker test reproduces transient failure UI and locks bounded retrying behavior. Photo research/ADR 006 informs implementation; vendor precision/depth claims are not validation. Founder explicitly approved normal baseline push; remote main now dadbb2f. New photo branch/PR contains only feature changes, no auto-merge/production deployment. 69 automated tests pass: SDK-pinned image modules, privacy byte/path/digest/ownership/non-food tests and real SQLite+file reopen. TypeScript, Deno, SDK compatibility and both platform bundles pass. Remaining device/reference gates unchecked; no new paid image calls made.
+
 - Founder added OPENAI_API_KEY only to server secrets, enabled/saved anonymous auth and explicitly approved US$1 total testing cap. Configure only the current UTC month at limit_usd=1; future months still default zero (no automatic renewal of this approval). MODEL_MAX_CALL_USD=0.01 reserves conservatively per call; bounded pinned-model text/image token costs fit this ceiling, but reservation is not measured invoice spend. Authenticated text smoke passed; same-job, normalized same-user and cross-user repeated results were identical. Ledger stayed $0.01 reserved with one ready cache/five completed request IDs across runs. First result for 2 roti + dal was 510 kcal with explicit 200 g dal/oil assumptions: no independent accuracy validation. Three test guest users were created; no personal photos/tokens were stored in Git. Live smoke script requires NUTRITION_SMOKE_APPROVED=true and is not part of automatic tests. Local development-only override enables mobile worker; public key file untouched, no production flag defaults changed. Expo Go restarted on 8082; iOS preview HTTP 200. 56 automated tests/typecheck and both bundles pass; founder phone tests remain pending.
 
 - Founder selects existing OpenAI API. Gemini adapter replaced by pinned gpt-5-mini-2025-08-07 Responses adapter with strict JSON/store=false, bounded output and prepared inline-image support; photo ingress still not wired. 55 tests, TypeScript and Deno entry check pass. Function v3 ACTIVE with verify_jwt=true; HTTP 401 rejection still passes. Redeployed with MODEL_API_ENABLED explicitly false; no OpenAI calls, guest signup or spending. OPENAI_API_KEY must be added only to Supabase server secrets; test/monthly budget and authenticated device evaluation remain pending.
@@ -189,6 +191,21 @@ On both iOS and Android, with an installed compatible client/build:
 5. Force-stop/terminate, reopen offline: profile, both meals, and correction remain. Do not uninstall or clear app storage.
 6. Leave a saved meal unedited across midnight or background/reopen next day; Today excludes it. Historical browsing arrives in 1.2.
 7. Record device/OS/build and pass/fail here. If the development client needs Metro to cold-launch, use an installed standalone development/release test build for the full offline cold-start check.
+
+## Photo feature review and manual gates
+
+Review the photo feature PR before replacing production nutrition-estimate. Existing schema/bucket is reused; no destructive migrations are required. After approved deployment set server PHOTO_API_ENABLED=true and client EXPO_PUBLIC_PHOTO_ESTIMATES_ENABLED=true. EXPO_PUBLIC_NUTRITION_FUNCTION can target an isolated preview function; never silently bypass JWT verification. Photo calls reserve at least $0.02 with 4096 output tokens; overall approved $1 cap is unchanged. Text retains 2048 tokens/$0.01 configured reservation.
+
+- [ ] iPhone camera consent/permission granted and denied; gallery cancel creates no meal.
+- [ ] Photo→local record/result screen, then live foods/macros and visible assumptions.
+- [ ] Airplane Mode capture; kill/reopen; reconnect resumes same record/photo.
+- [ ] Portion/food correction and numeric override survive restart; late result cannot overwrite.
+- [ ] Same photo retry/idempotency and changed-photo/owner cache separation.
+- [ ] Non-food/blurred image yields explicit no-estimate, not invented zero.
+- [ ] Owner cannot access another owner's photo; upload cleanup/orphan next-sync checked live.
+- [ ] Remove local photo preserves nutrition; export includes metadata, not image binaries.
+- [ ] Repeat on Android physical phone; camera/SDK/native changes require real builds later.
+- [ ] Evaluate known/weighed portions and Indian mixed meals, including oil/ghee; report errors rather than accuracy marketing.
 
 ## Next action
 

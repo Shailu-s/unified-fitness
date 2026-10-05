@@ -12,7 +12,7 @@ interface Database {
   getAllSync: <T>(sql: string, ...params: Value[]) => T[];
 }
 
-type MealRecord = Omit<SavedMeal, 'time' | 'emoji' | 'assumptions' | 'estimateModel' | 'estimateState'> & {
+type MealRecord = Omit<SavedMeal, 'time' | 'emoji' | 'assumptions' | 'estimateModel' | 'estimateState' | 'foods'> & {
   estimateJson: string | null;
   jobState: NutritionJob['state'] | null;
 };
@@ -21,7 +21,7 @@ type JobRecord = Omit<NutritionJob, 'input'> & { inputJson: string };
 const columns = `m.id, m.name, m.portion, m.kcal, m.protein, m.fibre, m.carbs, m.fat,
   m.nutrition_status AS nutritionStatus, m.logged_date AS loggedDate, m.created_at AS createdAt,
   m.updated_at AS updatedAt, m.input_type AS inputType, m.photo_uri AS photoUri, m.revision,
-  e.payload AS estimateJson, j.state AS jobState`;
+  e.payload AS estimateJson, j.state AS jobState, j.error_code AS estimateError`;
 const mealFrom = `FROM meals m LEFT JOIN meal_estimates e ON e.meal_id = m.id AND e.revision = m.revision AND m.nutrition_status = 'pending'
   LEFT JOIN nutrition_jobs j ON j.meal_id = m.id AND j.revision = m.revision`;
 const jobColumns = `id, meal_id AS mealId, revision, input_json AS inputJson, cache_key AS cacheKey, state, attempts,
@@ -36,8 +36,11 @@ function toMeal(row: MealRecord): SavedMeal {
     ...record,
     ...(estimate ? { kcal: estimate.kcal, protein: estimate.protein, carbs: estimate.carbs, fat: estimate.fat, fibre: estimate.fibre } : {}),
     nutritionStatus: estimate ? 'estimated' : record.nutritionStatus,
-    estimateState: record.nutritionStatus === 'manual' ? 'manual' : estimate ? 'estimated' : jobState === 'running' ? 'running' : jobState === 'failed' ? 'failed' : 'queued',
+    estimateState: record.nutritionStatus === 'manual' ? 'manual' : estimate ? 'estimated' : jobState === 'running' ? 'running' : jobState === 'failed' || (record.inputType === 'photo' && !record.photoUri) ? 'failed' : 'queued',
+    estimateError: record.inputType === 'photo' && !record.photoUri && !estimate && record.nutritionStatus === 'pending' ? 'photo_upload' : record.estimateError,
     assumptions: estimate?.assumptions ?? [],
+    foods: estimate?.foods ?? [],
+    name: record.name === 'Photo meal' && estimate?.foods?.length ? estimate.foods.map((food) => food.name).join(', ') : record.name,
     estimateModel: estimate?.model ?? null,
     emoji: '',
     time: `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`,
@@ -114,7 +117,7 @@ export class LoggingRepository {
     return id;
   }
 
-  private getMeal(id: string): SavedMeal {
+  getMeal(id: string): SavedMeal {
     const record = this.db.getFirstSync<MealRecord>(`SELECT ${columns} ${mealFrom} WHERE m.id = ?`, id);
     if (!record) throw new Error('Meal not found.');
     return toMeal(record);
@@ -214,6 +217,16 @@ export class LoggingRepository {
     return saved!;
   }
 
+  removePhoto(id: string): SavedMeal {
+    this.db.withTransactionSync(() => {
+      const meal = this.getMeal(id);
+      this.db.runSync('UPDATE meals SET photo_uri = NULL, revision = revision + 1, updated_at = ? WHERE id = ?', new Date().toISOString(), id);
+      this.db.runSync('UPDATE meal_estimates SET revision = ? WHERE meal_id = ? AND revision = ?', meal.revision + 1, id, meal.revision);
+      this.db.runSync("UPDATE nutrition_jobs SET state = 'cancelled', lease_token = NULL, lease_until = NULL WHERE meal_id = ? AND state IN ('queued','running','failed')", id);
+    });
+    return this.getMeal(id);
+  }
+
   getNutritionJobs(): NutritionJob[] {
     return this.db.getAllSync<JobRecord>(`SELECT ${jobColumns} FROM nutrition_jobs ORDER BY created_at, rowid`).map(toJob);
   }
@@ -225,7 +238,7 @@ export class LoggingRepository {
     this.db.withTransactionSync(() => {
       while (true) {
         const record = this.db.getFirstSync<JobRecord>(`SELECT ${jobColumns} FROM nutrition_jobs
-          WHERE ((state IN ('queued', 'failed') AND next_attempt_at <= ?) OR (state = 'running' AND lease_until <= ?))
+          WHERE (((state = 'queued' OR (state = 'failed' AND error_code = 'network' AND attempts < 3)) AND next_attempt_at <= ?) OR (state = 'running' AND lease_until <= ?))
             AND json_extract(input_json, '$.inputType') IN (${inputTypes.map(() => '?').join(',')})
           ORDER BY created_at, rowid LIMIT 1`, timestamp, timestamp, ...inputTypes);
         if (!record) return;
@@ -262,13 +275,14 @@ export class LoggingRepository {
   }
 
   failNutritionJob(id: string, leaseToken: string | null, errorCode: string, date = new Date()): boolean {
-    if (!['network', 'invalid_result', 'backend_not_configured', 'budget_exceeded'].includes(errorCode)) throw new Error('Invalid estimation error code.');
+    if (!['network', 'invalid_result', 'backend_not_configured', 'budget_exceeded', 'not_food', 'photo_upload'].includes(errorCode)) throw new Error('Invalid estimation error code.');
     let failed = false;
     this.db.withTransactionSync(() => {
       const job = this.db.getFirstSync<JobRecord>(`SELECT ${jobColumns} FROM nutrition_jobs WHERE id = ? AND state = 'running' AND lease_token = ?`, id, leaseToken);
       if (!job) return;
       const next = new Date(date.getTime() + Math.min(3600, 30 * 2 ** Math.min(job.attempts - 1, 7)) * 1000).toISOString();
-      this.db.runSync("UPDATE nutrition_jobs SET state = 'failed', next_attempt_at = ?, lease_token = NULL, lease_until = NULL, error_code = ?, updated_at = ? WHERE id = ?", next, errorCode, date.toISOString(), id);
+      this.db.runSync('UPDATE nutrition_jobs SET state = ?, next_attempt_at = ?, lease_token = NULL, lease_until = NULL, error_code = ?, updated_at = ? WHERE id = ?',
+        errorCode === 'network' && job.attempts < 3 ? 'queued' : 'failed', next, errorCode, date.toISOString(), id);
       failed = true;
     });
     return failed;
@@ -282,6 +296,6 @@ export class LoggingRepository {
 
   retryNutritionJob(mealId: string, date = new Date()) {
     const meal = this.getMeal(mealId);
-    this.db.runSync("UPDATE nutrition_jobs SET state = 'queued', next_attempt_at = ?, error_code = NULL, updated_at = ? WHERE meal_id = ? AND revision = ? AND state = 'failed'", date.toISOString(), date.toISOString(), mealId, meal.revision);
+    this.db.runSync("UPDATE nutrition_jobs SET state = 'queued', attempts = 0, next_attempt_at = ?, error_code = NULL, updated_at = ? WHERE meal_id = ? AND revision = ? AND state = 'failed'", date.toISOString(), date.toISOString(), mealId, meal.revision);
   }
 }

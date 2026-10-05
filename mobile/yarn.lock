@@ -1883,6 +1883,11 @@ expo-constants@~57.0.20:
   dependencies:
     "@expo/env" "~2.4.3"
 
+expo-crypto@57.0.3:
+  version "57.0.3"
+  resolved "https://registry.yarnpkg.com/expo-crypto/-/expo-crypto-57.0.3.tgz#e232bf2775f268baa8c5afab30085dc850410bb2"
+  integrity sha512-SAWqEfF37nc8ot7bXsVmu9AFYwQdC2kGvH/eNAHiR3bmlcf1Vv8wu9AnGKT+a90r3T8YfwMpZP4QAYlo4vCn9w==
+
 expo-dev-client@57.0.19:
   version "57.0.19"
   resolved "https://registry.yarnpkg.com/expo-dev-client/-/expo-dev-client-57.0.19.tgz#aefa665fcb736365ac161d4811723c8b4498b33e"
@@ -1926,6 +1931,25 @@ expo-font@^57.0.4, expo-font@~57.0.4:
   integrity sha512-7WOMC2oA6xCfOm8bbofqWn2bIqyWFm7YLEnpc/gA1MJH0Ll0TfT/3+CqRkoW2eNRWMS8sxrz5WukUmSvmNquHA==
   dependencies:
     fontfaceobserver "^2.1.0"
+
+expo-image-loader@~57.0.1:
+  version "57.0.1"
+  resolved "https://registry.yarnpkg.com/expo-image-loader/-/expo-image-loader-57.0.1.tgz#b031dc3e62ac09004f3e436d7081487236791f53"
+  integrity sha512-uhrZKLT/cTl2mXyR28kPpVkS5O+PK9N1QA/07IFM4f5T4g0lTW1JHT3NEWwEEsGFldPmVX4j7LwUVVZxE+woug==
+
+expo-image-manipulator@57.0.20:
+  version "57.0.20"
+  resolved "https://registry.yarnpkg.com/expo-image-manipulator/-/expo-image-manipulator-57.0.20.tgz#88648a2391e114906358a28a90ed7fd5d8b36398"
+  integrity sha512-LyuoLOJVNWNVEOABqcNCHrAiTtaRQm3usJMK4veG1hnglmt85eSuQTgUaug2TdUyAwGDJbdee4Iif+toTQwNgA==
+  dependencies:
+    expo-image-loader "~57.0.1"
+
+expo-image-picker@57.0.20:
+  version "57.0.20"
+  resolved "https://registry.yarnpkg.com/expo-image-picker/-/expo-image-picker-57.0.20.tgz#c32efa3daad2880ebf54e9dc0cddd09e57967a34"
+  integrity sha512-plgcGuMZMWqDchjXQW6S/WepYLB5KqfbZOzwC6xe0+j5IhY4ipvVuRZcXeP/0NgKgU0Jiu/XoTK4Bi8crtZ+sQ==
+  dependencies:
+    expo-image-loader "~57.0.1"
 
 expo-json-utils@~57.0.2:
   version "57.0.2"

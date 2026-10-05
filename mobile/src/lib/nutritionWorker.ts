@@ -10,14 +10,14 @@ interface Store {
 }
 
 export class NutritionTransportError extends Error {
-  code: 'network' | 'invalid_result' | 'backend_not_configured' | 'budget_exceeded';
+  code: 'network' | 'invalid_result' | 'backend_not_configured' | 'budget_exceeded' | 'not_food' | 'photo_upload';
   constructor(code: NutritionTransportError['code']) { super(code); this.code = code; }
 }
 
 export async function processNutritionJobs(store: Store, estimate: (job: NutritionJob) => Promise<Reply>, onChange: () => void,
-  shouldContinue: () => boolean, now: () => Date = () => new Date()) {
+  shouldContinue: () => boolean, now: () => Date = () => new Date(), inputTypes: ('text' | 'photo')[] = ['text']) {
   for (let count = 0; count < 10 && shouldContinue(); count++) {
-    const job = store.claimNutritionJob(now(), ['text']);
+    const job = store.claimNutritionJob(now(), inputTypes);
     onChange();
     if (!job) return;
     try {

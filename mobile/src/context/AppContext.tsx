@@ -5,7 +5,7 @@ import { mockActivity, mockProfile } from '../data/mock';
 import { LoggingRepository } from '../lib/loggingRepository';
 import { localDateKey, sumNutrition } from '../lib/meals';
 import { computeTargets } from '../lib/targets';
-import { nutritionBackendConfig, requestNutrition } from '../lib/supabaseNutrition';
+import { nutritionBackendConfig, photoEstimatesEnabled, requestNutrition } from '../lib/supabaseNutrition';
 import { processNutritionJobs } from '../lib/nutritionWorker';
 import type { Activity, ExportData, MealInput, Profile, SavedMeal, Targets } from '../types';
 
@@ -19,7 +19,11 @@ interface AppState {
   storageError: string | null;
   retryStorage: () => void;
   completeOnboarding: (p: Profile) => void;
-  addMeal: (input: MealInput) => void;
+  addMeal: (input: MealInput) => SavedMeal;
+  getMeal: (id: string) => SavedMeal;
+  retryEstimate: (id: string) => void;
+  removePhoto: (id: string) => SavedMeal;
+  photosEnabled: boolean;
   updateMeal: (id: string, input: MealInput) => SavedMeal;
   getMealsForDay: (day: string) => SavedMeal[];
   getMealDays: () => string[];
@@ -36,6 +40,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [meals, setMeals] = useState<SavedMeal[]>([]);
   const [ready, setReady] = useState(false);
   const [storageError, setStorageError] = useState<string | null>(null);
+  const photosEnabled = photoEstimatesEnabled();
   const processing = useRef(false);
   const active = useRef(NativeAppState.currentState === 'active');
   const alive = useRef(true);
@@ -81,10 +86,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     processing.current = true;
     void processNutritionJobs(repository.current, requestNutrition, () => {
       if (alive.current) refreshMeals(true);
-    }, () => alive.current && active.current).catch(() => {
+    }, () => alive.current && active.current, () => new Date(), photosEnabled ? ['text','photo'] : ['text']).catch(() => {
       if (alive.current) setStorageError('Could not process local estimation jobs. Your saved meals remain intact.');
     }).finally(() => { processing.current = false; });
-  }, [estimatesEnabled, refreshMeals]);
+  }, [estimatesEnabled, photosEnabled, refreshMeals]);
 
   useEffect(() => {
     alive.current = true;
@@ -135,6 +140,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const saved = requireRepository().addMeal(input, date);
     setMeals((previous) => [...previous, saved]);
     kickEstimates();
+    return saved;
   }, [requireRepository, refreshMeals, kickEstimates]);
 
   const updateMeal = useCallback((id: string, input: MealInput) => {
@@ -145,13 +151,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return saved;
   }, [requireRepository, refreshMeals, kickEstimates]);
 
+  const getMeal = useCallback((id: string) => requireRepository().getMeal(id), [requireRepository]);
+  const retryEstimate = useCallback((id: string) => { requireRepository().retryNutritionJob(id); refreshMeals(true); kickEstimates(); }, [requireRepository, refreshMeals, kickEstimates]);
+  const removePhoto = useCallback((id: string) => { const meal = requireRepository().removePhoto(id); refreshMeals(true); return meal; }, [requireRepository, refreshMeals]);
   const getMealsForDay = useCallback((day: string) => requireRepository().getMeals(day), [requireRepository]);
   const getMealDays = useCallback(() => requireRepository().getMealDays(), [requireRepository]);
   const getExportData = useCallback(() => requireRepository().getExportData(), [requireRepository]);
 
   const value: AppState = {
     profile, targets, meals, eaten, activity: mockActivity, ready, storageError, retryStorage,
-    completeOnboarding, addMeal, updateMeal, getMealsForDay, getMealDays, getExportData, estimatesEnabled,
+    completeOnboarding, addMeal, updateMeal, getMealsForDay, getMealDays, getExportData, estimatesEnabled, getMeal, retryEstimate, removePhoto, photosEnabled,
   };
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

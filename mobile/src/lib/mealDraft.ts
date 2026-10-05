@@ -27,6 +27,6 @@ export function mealDraftInput(meal: SavedMeal | null, draft: MealDraft): MealIn
   return validateMealInput({
     name: draft.name, portion: draft.portion,
     ...(unchangedEstimate ? { kcal: null, protein: null, carbs: null, fat: null, fibre: null } : nutrition),
-    inputType: meal?.inputType ?? 'text', photoUri: meal?.photoUri ?? null,
+    inputType: meal?.photoUri ? 'photo' : 'text', photoUri: meal?.photoUri ?? null,
   });
 }

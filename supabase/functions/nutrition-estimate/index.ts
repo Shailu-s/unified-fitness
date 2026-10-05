@@ -1,6 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.117.2';
 import { createNutritionHandler } from '../_shared/handler.ts';
 import { createOpenAIEstimator, OPENAI_NUTRITION_MODEL } from '../_shared/model.ts';
+import { photoObjectPath, verifiedPhoto } from '../_shared/photo.ts';
 
 const url = Deno.env.get('SUPABASE_URL') ?? '';
 const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
@@ -19,7 +20,8 @@ Deno.serve(createNutritionHandler({
   claim: async (owner, input, key, version) => {
     const { data, error } = await admin.rpc('claim_nutrition_request', {
       p_owner: owner, p_client_id: input.clientId, p_cache_key: key, p_estimator_version: version,
-      p_allow_model: enabled, p_max_cost: maximumCost,
+      p_allow_model: enabled && (input.inputType === 'text' || Deno.env.get('PHOTO_API_ENABLED') === 'true'),
+      p_max_cost: input.inputType === 'photo' ? Math.max(0.02, maximumCost) : maximumCost,
     });
     if (error) throw new Error('Backend unavailable.');
     return data;
@@ -32,6 +34,15 @@ Deno.serve(createNutritionHandler({
   fail: async (key, token) => {
     const { error } = await admin.rpc('fail_nutrition_request', { p_cache_key: key, p_lease_token: token });
     if (error) throw new Error('Could not save failure.');
+  },
+  loadPhoto: async (owner, id, digest) => {
+    const { data, error } = await admin.storage.from('meal-photos').download(photoObjectPath(owner, id));
+    if (error || !data) throw new Error('Photo unavailable.');
+    return verifiedPhoto(data, digest);
+  },
+  removePhoto: async (owner, id) => {
+    const { error } = await admin.storage.from('meal-photos').remove([photoObjectPath(owner, id)]);
+    if (error) throw new Error('Photo cleanup failed.');
   },
   estimate: createOpenAIEstimator(apiKey, model),
 }));
