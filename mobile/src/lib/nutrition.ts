@@ -1,4 +1,4 @@
-import type { MealInput, NutritionEstimate } from '../types';
+import type { MealInput, NutritionEstimate } from '../types.ts';
 
 export const NUTRITION_CACHE_VERSION = 'nutrition-v1';
 const normalize = (text: string) => text.normalize('NFKC').trim().toLowerCase().replace(/\s+/g, ' ');

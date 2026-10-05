@@ -19,7 +19,7 @@ Founder approves nutrition before rings and explicitly includes photo estimation
 | Slice | Deliverable | Acceptance gate |
 |---|---|---|
 | N1 — VERIFY | Shared nutrition data/queue/cache foundation | Additive migration, full-macro/unknown fields, text/photo input metadata, durable jobs/leases, local cache, revision/correction protection and status UI implemented. Photo metadata is tested; actual capture/durable files are a subsequent N3 gate. Founder migration/reopen check pending. |
-| N2 | Backend + typed estimates | Authenticated/rate-limited endpoint, validated structured estimates, versioned local/shared cache, durable jobs/retries, idempotency and spending guard. Repeated normalized phrases avoid a new nutrition call; no curated seed DB. |
+| N2 — DEPLOYMENT PENDING | Backend + typed estimates | Supabase schema/private bucket/RLS, service-only cache/claim/budget RPCs, JWT-authenticated Edge API, bounded model adapter, secure guest-session/mobile worker bridge implemented and locally tested. Worker/model calls default off; remote deployment, anonymous-auth enablement, model/privacy/budget approval and real-device inference pending. |
 | N3 | Photo capture/gallery + vision estimates | SDK-compatible photo input, resizing/metadata removal, private uploads, food/portion extraction, shared nutrition pipeline, editable visible assumptions. New photos may require a vision call even when nutrition is cached. Raw photos never enter the shared meal cache. |
 | N4 | Corrections, privacy, reliability and quality | Portion/food correction UX; late results cannot overwrite edits. Test offline capture, kill/reopen, denied camera access, model failure/timeouts, duplicate jobs, invalid outputs, image-size limits, and both OSes. Evaluate Indian mixed meals against known-portion/reference cases; do not claim validated photo accuracy without evidence. Update history/export for new nutrition data and document photo retention/export policy. |
 
@@ -27,7 +27,7 @@ Complete N1–N4 and founder checkpoints before moving to real rings/GPS. Each s
 
 ### Approved backend: Supabase (integration pending)
 
-Use Supabase: Postgres for shared estimates/jobs; TypeScript/Deno Edge Functions for bounded model orchestration; private Storage with ownership/RLS policies for photos; Auth for access control (guest sessions can avoid a mandatory signup screen). SQLite remains the local source of truth; server auth/upload/model calls never gate saving a local log. Use a durable Postgres queue and idempotent workers, not an in-memory queue or a long request assumed to survive indefinitely. Supabase Edge runtime limits require bounded work; resizing happens on mobile, model inference uses an external API.
+Use Supabase: Postgres for shared estimates/jobs; TypeScript/Deno Edge Functions for bounded model orchestration; private Storage with ownership/RLS policies for photos; Auth for access control (guest sessions can avoid a mandatory signup screen). SQLite remains the local source of truth; server auth/upload/model calls never gate saving a local log. Use durable Postgres request/cache state and idempotent leased processing, not an in-memory queue or a request assumed to survive indefinitely. Current bounded processing is request-driven; retry/reopen recovers persisted work, not autonomous background execution. Supabase Edge runtime limits require bounded work; resizing happens on mobile, model inference uses an external API.
 
 Recommend a supported multimodal Flash-class API behind an adapter, with exact provider/model pinned only after a small text/image Indian-food evaluation and pricing/privacy review. Provider API key and service credentials remain server-only. Require explicit API-budget approval before real calls. Gemini is a candidate with documented image/JSON capabilities; free-tier content may be used to improve products, so personal photos need an appropriate paid/privacy-approved tier. Supabase free tier suits prototypes but can pause after inactivity; local logs remain usable and uncached estimates wait safely.
 
@@ -127,6 +127,8 @@ No native compile/install result claimed. Generated projects and JS bundles are 
 
 ## Verification log
 
+- N2 backend and mobile bridge implemented: 54 Node tests, isolated real Postgres RPC/coalescing/budget/RLS/storage-owner tests, Deno entry check, TypeScript, SDK compatibility and both mobile bundles pass. Public config was consumed only by runtime validation; key values were not shown. Read-only owner-project auth settings returned HTTP 200 and anonymous sign-in disabled. Remote deployment and live model tests have not run. Client worker, model switch and positive monthly budget all require explicit setup/approval; default is paused/zero budget.
+
 - Supabase approved; owner provided public project URL. N1 local foundation implemented and verified with 39 tests, TypeScript, and iOS/Android JS bundle exports. Tests use fixtures, not live model data. Supabase CLI/Deno are absent; Docker is available. No remote migration, authentication or paid inference was executed. Dotenv files are now ignored; existing dotenv values were not read. Live backend and actual photo capture/upload/vision remain pending.
 
 - Founder reports the current basic Expo Go testing works. Treat this as an aggregate preview-checkpoint pass, not proof of every optional export case, Android behavior, or standalone offline cold start. No native GPS/health data is connected yet.
@@ -182,7 +184,7 @@ On both iOS and Android, with an installed compatible client/build:
 
 Founder tests N1 migration/reopen: reload existing Expo Go project without clearing data; verify old logs/manual values remain, new logs save as Queued for estimate, portion edits persist, and unknown carbs/fat show a dash. No automatic numbers are expected before live backend setup.
 
-Next implement Supabase shared cache/jobs/storage/API, connect the provided project with a public client key and owner deployment access, then enable real inference only after provider/privacy/budget approval. Photo capture/private uploads/vision remain in this nutrition phase before rings/GPS.
+Next obtain owner deployment approval/access, apply the create-only Supabase migration and deploy nutrition-estimate with JWT verification enabled. Enable guest auth with appropriate abuse protection. Then select a supported model, review privacy/rates, configure server-only secrets and approved monthly limit, and explicitly activate client/model processing for a bounded real-device smoke test. No paid call is authorized by the existing public-key setup. Photo capture/private uploads/vision remain in this nutrition phase before rings/GPS.
 
 Native installations remain paused until the researched compatible Mac/SDK route is approved. Keep health/GPS feasibility tests early and explicit; both native install gates remain incomplete. Export is a backup/data-ownership requirement, not an expanded daily feature.
 
