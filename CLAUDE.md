@@ -154,6 +154,11 @@ The founder approved publishing the prior 11 local foundation commits to main.
 Future features use branches and reviewable PRs against main; do not merge or
 push future feature work directly to main. Photo work uses feat/photo-nutrition.
 
+Every repository commit must explicitly use both author and committer identity:
+`Shailu-s <srajawat024@gmail.com>`. Set GIT_AUTHOR_NAME/GIT_AUTHOR_EMAIL and
+GIT_COMMITTER_NAME/GIT_COMMITTER_EMAIL per commit command; never inherit the
+machine-wide identity. Do not change Git configuration automatically.
+
 Commit each meaningful feature slice or bug fix after automated checks; avoid
 micro-commits and giant mixed changes. Include the relevant tests and tracker
 updates. Keep unverified manual gates pending. Never push unless explicitly asked.
