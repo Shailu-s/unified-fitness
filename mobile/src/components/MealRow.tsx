@@ -1,8 +1,8 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import type { Meal } from '../types';
+import type { SavedMeal } from '../types';
 import { colors, fonts, radius } from '../theme';
 
-export function MealRow({ meal, last, onPress }: { meal: Meal; last: boolean; onPress: () => void }) {
+export function MealRow({ meal, last, onPress }: { meal: SavedMeal; last: boolean; onPress: () => void }) {
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`Edit ${meal.name}`} style={[s.row, !last && s.divider]}>
       <View style={s.thumb}>
@@ -14,6 +14,10 @@ export function MealRow({ meal, last, onPress }: { meal: Meal; last: boolean; on
         </Text>
         <Text style={s.sub}>
           {meal.time} · {meal.portion}
+        </Text>
+        <Text style={s.sub}>
+          {meal.estimateState === 'queued' ? 'Queued for estimate' : meal.estimateState === 'running' ? 'Estimating…' :
+            meal.estimateState === 'failed' ? 'Estimate failed · saved safely' : meal.nutritionStatus === 'estimated' ? 'Estimated' : 'Corrected nutrition'}
         </Text>
       </View>
       <Text style={s.kcal}>{meal.kcal === null ? 'Not estimated' : `${meal.kcal} kcal`}</Text>

@@ -88,6 +88,7 @@ export function HistoryScreen({ onClose }: { onClose: () => void }) {
           <>
             <View style={s.summary}>
               <Text style={s.totals}>{num(totals.kcal)} kcal · {num(totals.protein)} g protein · {num(totals.fibre)} g fibre</Text>
+              <Text style={s.help}>Carbs {totals.carbs === null ? '—' : num(totals.carbs)} g · Fat {totals.fat === null ? '—' : num(totals.fat)} g</Text>
               <Text style={s.help}>
                 {totals.pending > 0 ? `${totals.pending} not estimated · known nutrition only` : 'Daily totals · known nutrition only'}
               </Text>

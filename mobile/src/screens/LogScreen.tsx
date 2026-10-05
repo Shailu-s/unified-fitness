@@ -7,6 +7,7 @@ import { MealRow } from '../components/MealRow';
 import { MealEditor } from '../components/MealEditor';
 import { useApp } from '../context/AppContext';
 import { shareExport } from '../lib/shareExport';
+import { num } from '../lib/format';
 import { HistoryScreen } from './HistoryScreen';
 import type { SavedMeal } from '../types';
 import { colors, eyebrow, fonts, gutter } from '../theme';
@@ -81,12 +82,13 @@ export function LogScreen() {
         <View style={s.macros}>
           <MacroBar name="Protein" value={eaten.protein} goal={targets.protein} unit="g" color={colors.protein} />
           <MacroBar name="Fibre" value={eaten.fibre} goal={targets.fibre} unit="g" color={colors.fibre} />
+          <Text style={s.macroTotals}>Carbs {eaten.carbs === null ? '—' : num(eaten.carbs)} g · Fat {eaten.fat === null ? '—' : num(eaten.fat)} g</Text>
           <View>
             <MacroBar name="Calories" value={eaten.kcal} goal={targets.kcal} unit="kcal" color={colors.move} />
             <View style={s.burn}>
               <View style={s.burnDot} />
               <Text style={s.burnText}>
-                {eaten.pending > 0 ? `${eaten.pending} not estimated · totals include known nutrition only` : 'Manually entered nutrition · tap a meal to correct'}
+                {eaten.pending > 0 ? `${eaten.pending} waiting for estimates · known nutrition only` : 'Known nutrition only · tap a meal to correct'}
               </Text>
             </View>
           </View>
@@ -166,6 +168,7 @@ const s = StyleSheet.create({
   heroLabel: { ...eyebrow, letterSpacing: 1.3, color: colors.inkMid, marginTop: 6 },
 
   macros: { gap: 11 },
+  macroTotals: { fontFamily: fonts.mono, fontSize: 12, color: colors.inkMid },
   burn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 7 },
   burnDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.move },
   burnText: { flex: 1, fontFamily: fonts.mono, fontSize: 11, color: colors.inkMid },

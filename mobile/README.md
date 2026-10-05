@@ -55,7 +55,17 @@ opens calendar-day records without changing Today. Export creates a versioned JS
 copy of your profile and all saved meals; choose Save to Files for a local copy.
 Exported files contain personal information. History/share-sheet/offline behavior
 still needs device verification. Activity rings remain explicitly labeled demo data.
-Model estimation, photo, and voice are not implemented yet.
+Nutrition foundation uses additive schema v2: jobs persist with meals, worker leases
+and revisions reject stale results, and generic estimates have a versioned local
+cache. Unknown carbs/fat show a dash. New logs have no custom-macro entry requirement;
+existing values/future estimates can be corrected. Live model worker, photo capture,
+upload/vision, and voice are not implemented yet. Test values exist only in tests.
+
+Supabase is selected but not connected. Use `mobile/.env.example` as the template
+for `mobile/.env.local`; fill only the publishable/legacy anon client key there.
+Project URL is public. Service-role and model keys belong only in backend secrets,
+never EXPO_PUBLIC variables or chat. Dotenv files are ignored; do not reset or
+uninstall Expo Go to test the migration.
 
 ## Structure
 

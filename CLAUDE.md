@@ -95,7 +95,13 @@ unknown nutrition. Slice 1.2 adds separate calendar history and local JSON expor
 (profile + all saved meals) through the native share sheet. Activity remains demo
 data. iPhone Expo Go reopen persistence passed per founder; native history/sharing
 and full offline cold-start verification are pending. GPS, health integration,
-LLM estimates, sync, and billing are not built. Native dev-client setup and
+live LLM estimates, sync, and billing are not built. Nutrition foundation now uses
+additive SQLite schema v2: full macro fields, text/photo metadata, revisions,
+durable jobs with leases/retries, local cache and late-result/correction protection.
+Supabase is the approved backend; live deployment/model budget and photo capture
+are still pending. Never read or commit dotenv values; mobile configuration may
+contain only public Supabase URL/publishable key, never service-role/model secrets.
+Native dev-client setup and
 non-destructive project generation are prepared; native compilation/install stays
 blocked on full Xcode (currently only Command Line Tools) and Android SDK access.
 

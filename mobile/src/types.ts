@@ -33,10 +33,50 @@ export interface SavedMeal extends Meal {
   createdAt: string;
   updatedAt: string;
   loggedDate: string;
-  nutritionStatus: 'pending' | 'manual';
+  nutritionStatus: 'pending' | 'manual' | 'estimated';
+  carbs: number | null;
+  fat: number | null;
+  inputType: 'text' | 'photo';
+  photoUri: string | null;
+  revision: number;
+  assumptions: string[];
+  estimateModel: string | null;
+  estimateState: 'queued' | 'running' | 'failed' | 'estimated' | 'manual';
 }
 
-export type MealInput = Pick<Meal, 'name' | 'portion' | 'kcal' | 'protein' | 'fibre'>;
+export type MealInput = Pick<Meal, 'name' | 'portion' | 'kcal' | 'protein' | 'fibre'> & {
+  carbs?: number | null;
+  fat?: number | null;
+  inputType?: 'text' | 'photo';
+  photoUri?: string | null;
+};
+
+export interface NutritionEstimate {
+  version: 1;
+  model: string;
+  kcal: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fibre: number;
+  assumptions: string[];
+}
+
+export interface NutritionJob {
+  id: string;
+  mealId: string;
+  revision: number;
+  input: MealInput;
+  cacheKey: string | null;
+  state: 'queued' | 'running' | 'failed' | 'completed' | 'cancelled';
+  attempts: number;
+  nextAttemptAt: string;
+  leaseUntil: string | null;
+  leaseToken: string | null;
+  errorCode: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface ExportData {
   profile: Profile | null;

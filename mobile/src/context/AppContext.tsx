@@ -11,7 +11,7 @@ interface AppState {
   profile: Profile | null;
   targets: Targets;
   meals: SavedMeal[];
-  eaten: { kcal: number; protein: number; fibre: number; pending: number };
+  eaten: ReturnType<typeof sumNutrition>;
   activity: Activity;
   ready: boolean;
   storageError: string | null;

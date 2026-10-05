@@ -5,29 +5,7 @@ import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { test } from 'node:test';
 import { localDateKey, validateMealInput, sumNutrition } from '../src/lib/meals.ts';
-import { LoggingRepository } from '../src/lib/loggingRepository.ts';
-
-function repositoryFor(db, overrides = {}) {
-  return new LoggingRepository({
-    execSync: (sql) => db.exec(sql),
-    runSync: (sql, ...params) => db.prepare(sql).run(...params),
-    getFirstSync: (sql, ...params) => db.prepare(sql).get(...params) ?? null,
-    getAllSync: (sql, ...params) => db.prepare(sql).all(...params),
-    withTransactionSync: (task) => {
-      db.exec('BEGIN');
-      try { task(); db.exec('COMMIT'); }
-      catch (error) { db.exec('ROLLBACK'); throw error; }
-    },
-    ...overrides,
-  });
-}
-
-function open(path = ':memory:') {
-  const db = new DatabaseSync(path);
-  const repository = repositoryFor(db);
-  repository.initialize();
-  return { db, repository };
-}
+import { open, repositoryFor } from './sqlite.mjs';
 
 const profile = { name: 'Shailendra', sex: 'male', age: 28, heightCm: 172, weightKg: 70, goal: 'maintain', diet: 'veg' };
 const input = { name: '2 roti dal chawal', portion: '1 katori dal', kcal: null, protein: null, fibre: null };
@@ -100,7 +78,7 @@ test('unknown nutrition is excluded from totals, explicit zero remains a manual 
     const pending = repository.addMeal(input);
     const manual = repository.addMeal({ ...input, kcal: 100, protein: 0, fibre: 2 });
     assert.equal(manual.nutritionStatus, 'manual');
-    assert.deepEqual(sumNutrition([pending, manual]), { kcal: 100, protein: 0, fibre: 2, pending: 1 });
+    assert.deepEqual(sumNutrition([pending, manual]), { kcal: 100, protein: 0, fibre: 2, pending: 1, carbs: null, fat: null });
   } finally { db.close(); }
 });
 

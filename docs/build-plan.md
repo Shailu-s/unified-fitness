@@ -12,22 +12,22 @@ Founder feedback loop: after every slice, run checks, launch a runnable version,
 
 ## Approved next phase: complete text + photo nutrition
 
-Founder approves nutrition before rings and explicitly includes photo estimation in this phase. Native health/GPS work remains later; input uncertainty and correction requirements are unchanged. Backend/provider choices below are recommendations, not yet approved.
+Founder approves nutrition before rings and explicitly includes photo estimation in this phase. Supabase backend is now approved; native health/GPS work remains later. Model/provider selection, private-photo processing/privacy approval and billable API spending still need approval.
 
 ### Nutrition phase implementation slices
 
 | Slice | Deliverable | Acceptance gate |
 |---|---|---|
-| N1 | Shared nutrition data/queue/cache foundation | Safely migrate existing logs; include calories/protein/carbs/fat/fibre, input type, estimate state, assumptions, revisions. Text and local photo files persist before network work; pending jobs survive restart. |
+| N1 — VERIFY | Shared nutrition data/queue/cache foundation | Additive migration, full-macro/unknown fields, text/photo input metadata, durable jobs/leases, local cache, revision/correction protection and status UI implemented. Photo metadata is tested; actual capture/durable files are a subsequent N3 gate. Founder migration/reopen check pending. |
 | N2 | Backend + typed estimates | Authenticated/rate-limited endpoint, validated structured estimates, versioned local/shared cache, durable jobs/retries, idempotency and spending guard. Repeated normalized phrases avoid a new nutrition call; no curated seed DB. |
 | N3 | Photo capture/gallery + vision estimates | SDK-compatible photo input, resizing/metadata removal, private uploads, food/portion extraction, shared nutrition pipeline, editable visible assumptions. New photos may require a vision call even when nutrition is cached. Raw photos never enter the shared meal cache. |
 | N4 | Corrections, privacy, reliability and quality | Portion/food correction UX; late results cannot overwrite edits. Test offline capture, kill/reopen, denied camera access, model failure/timeouts, duplicate jobs, invalid outputs, image-size limits, and both OSes. Evaluate Indian mixed meals against known-portion/reference cases; do not claim validated photo accuracy without evidence. Update history/export for new nutrition data and document photo retention/export policy. |
 
 Complete N1–N4 and founder checkpoints before moving to real rings/GPS. Each slice remains a meaningful commit/test handoff rather than one giant feature commit. Voice later feeds the same nutrition pipeline.
 
-### Proposed backend (awaiting approval)
+### Approved backend: Supabase (integration pending)
 
-Recommend Supabase: Postgres for shared estimates/jobs; TypeScript/Deno Edge Functions for bounded model orchestration; private Storage with ownership/RLS policies for photos; Auth for access control (guest sessions can avoid a mandatory signup screen). SQLite remains the local source of truth; server auth/upload/model calls never gate saving a local log. Use a durable Postgres queue and idempotent workers, not an in-memory queue or a long request assumed to survive indefinitely. Supabase Edge runtime limits require bounded work; resizing happens on mobile, model inference uses an external API.
+Use Supabase: Postgres for shared estimates/jobs; TypeScript/Deno Edge Functions for bounded model orchestration; private Storage with ownership/RLS policies for photos; Auth for access control (guest sessions can avoid a mandatory signup screen). SQLite remains the local source of truth; server auth/upload/model calls never gate saving a local log. Use a durable Postgres queue and idempotent workers, not an in-memory queue or a long request assumed to survive indefinitely. Supabase Edge runtime limits require bounded work; resizing happens on mobile, model inference uses an external API.
 
 Recommend a supported multimodal Flash-class API behind an adapter, with exact provider/model pinned only after a small text/image Indian-food evaluation and pricing/privacy review. Provider API key and service credentials remain server-only. Require explicit API-budget approval before real calls. Gemini is a candidate with documented image/JSON capabilities; free-tier content may be used to improve products, so personal photos need an appropriate paid/privacy-approved tier. Supabase free tier suits prototypes but can pause after inactivity; local logs remain usable and uncached estimates wait safely.
 
@@ -43,7 +43,7 @@ Recommendation: automatic nutrition estimates first. Existing meal persistence/e
 | 4 | Complete live GPS walks/runs (2.2) | Start/pause/resume/finish, route/distance/time persisted continuously, interruption recovery; actual locked-screen/background and battery/OEM tests on both OSes. |
 | 5 | Voice logging (3.3) | Speech → reviewed transcript → same nutrition pipeline/cache, not a second estimator. Define supported languages and offline/failure fallback; preserve captured input and keep typing available. |
 
-The text + photo nutrition phase still requires founder approval of backend/model provider and a hard API spending cap. Secrets stay server-side; endpoint needs validation and abuse/rate limits. Repeated normalized meal phrases must reuse shared estimates; personal corrections stay separate from global cache. Local storage remains source of truth. Nutrition phase scope is approved; backend setup, external services and billable model calls still await explicit approval.
+Supabase is approved. The text + photo nutrition phase still requires deployment access, model/provider selection and a hard API spending cap. Secrets stay server-side; endpoint needs validation and abuse/rate limits. Repeated normalized meal phrases must reuse shared estimates; personal corrections stay separate from global cache. Local storage remains source of truth. Nutrition phase and Supabase scope are approved; live deployment access and billable model calls remain unconfigured.
 
 Founder explicitly prioritizes complete text + photo nutrition before the remaining dashboard tracking pillars. Photo accuracy limits and the later native GPS feasibility risk remain acknowledged. Each usable slice gets automated checks, one meaningful commit, founder testing, then the next slice.
 
@@ -127,6 +127,8 @@ No native compile/install result claimed. Generated projects and JS bundles are 
 
 ## Verification log
 
+- Supabase approved; owner provided public project URL. N1 local foundation implemented and verified with 39 tests, TypeScript, and iOS/Android JS bundle exports. Tests use fixtures, not live model data. Supabase CLI/Deno are absent; Docker is available. No remote migration, authentication or paid inference was executed. Dotenv files are now ignored; existing dotenv values were not read. Live backend and actual photo capture/upload/vision remain pending.
+
 - Founder reports the current basic Expo Go testing works. Treat this as an aggregate preview-checkpoint pass, not proof of every optional export case, Android behavior, or standalone offline cold start. No native GPS/health data is connected yet.
 
 - 2026-10-05: repository audited. Existing UI only; profile/meals in React state, activity/photo results mocked, text/voice placeholders. No existing roadmap or tests. Dependency installation completed using existing yarn lockfile.
@@ -178,7 +180,9 @@ On both iOS and Android, with an installed compatible client/build:
 
 ## Next action
 
-Founder approves text + photo nutrition as the first complete feature phase, before rings/GPS, and asks to discuss backend stack first. Recommend Supabase plus a multimodal model API; confirm backend/provider choice, access and a hard API budget before starting backend integration or paid calls.
+Founder tests N1 migration/reopen: reload existing Expo Go project without clearing data; verify old logs/manual values remain, new logs save as Queued for estimate, portion edits persist, and unknown carbs/fat show a dash. No automatic numbers are expected before live backend setup.
+
+Next implement Supabase shared cache/jobs/storage/API, connect the provided project with a public client key and owner deployment access, then enable real inference only after provider/privacy/budget approval. Photo capture/private uploads/vision remain in this nutrition phase before rings/GPS.
 
 Native installations remain paused until the researched compatible Mac/SDK route is approved. Keep health/GPS feasibility tests early and explicit; both native install gates remain incomplete. Export is a backup/data-ownership requirement, not an expanded daily feature.
 

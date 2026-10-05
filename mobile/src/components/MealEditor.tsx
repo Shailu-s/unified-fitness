@@ -2,15 +2,9 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, gutter } from '../theme';
-import { validateMealInput } from '../lib/meals';
+import { mealDraftInput } from '../lib/mealDraft';
 import type { MealInput, SavedMeal } from '../types';
 import { PrimaryButton } from './ui';
-
-function nutritionValue(text: string): number | null {
-  const value = text.trim();
-  if (!value) return null;
-  return /^(?:\d+(?:[.,]\d*)?|[.,]\d+)$/.test(value) ? Number(value.replace(',', '.')) : NaN;
-}
 
 export function MealEditor({ meal, onSave, onClose }: {
   meal: SavedMeal | null;
@@ -23,13 +17,15 @@ export function MealEditor({ meal, onSave, onClose }: {
   const [kcal, setKcal] = useState(meal?.kcal?.toString() ?? '');
   const [protein, setProtein] = useState(meal?.protein?.toString() ?? '');
   const [fibre, setFibre] = useState(meal?.fibre?.toString() ?? '');
+  const [carbs, setCarbs] = useState(meal?.carbs?.toString() ?? '');
+  const [fat, setFat] = useState(meal?.fat?.toString() ?? '');
   const [showNutrition, setShowNutrition] = useState(meal?.nutritionStatus === 'manual');
   const [error, setError] = useState<string | null>(null);
 
   const save = () => {
     let input: MealInput;
     try {
-      input = validateMealInput({ name, portion, kcal: nutritionValue(kcal), protein: nutritionValue(protein), fibre: nutritionValue(fibre) });
+      input = mealDraftInput(meal, { name, portion, kcal, protein, carbs, fat, fibre });
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : 'Check your meal details.');
       return;
@@ -51,15 +47,20 @@ export function MealEditor({ meal, onSave, onClose }: {
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.body}>
           <Field label="What did you eat?" value={name} onChangeText={setName} placeholder="2 roti, 1 katori dal, rice" autoFocus multiline />
           <Field label="Portion (optional)" value={portion} onChangeText={setPortion} placeholder="1 katori, 2 medium roti" />
-          <Text style={s.help}>Saved on this phone, even offline. Automatic estimates are not available yet.</Text>
-          <Pressable onPress={() => setShowNutrition(!showNutrition)} accessibilityRole="button" accessibilityState={{ expanded: showNutrition }} style={s.toggle}>
-            <Text style={s.cancel}>{showNutrition ? 'Hide nutrition fields' : 'Add nutrition manually (optional)'}</Text>
-          </Pressable>
+          <Text style={s.help}>Saved offline immediately. Unestimated meals are queued; live estimates are waiting for backend setup.</Text>
+          {meal?.assumptions?.length ? <Text style={s.help}>Estimate assumptions: {meal.assumptions.join(' · ')}</Text> : null}
+          {meal && meal.nutritionStatus !== 'pending' && (
+            <Pressable onPress={() => setShowNutrition(!showNutrition)} accessibilityRole="button" accessibilityState={{ expanded: showNutrition }} style={s.toggle}>
+              <Text style={s.cancel}>{showNutrition ? 'Hide nutrition fields' : 'Correct nutrition (optional)'}</Text>
+            </Pressable>
+          )}
           {showNutrition && (
             <>
-              <Text style={s.help}>Enter all three values, or leave all blank. Blank means not estimated, not zero.</Text>
+              <Text style={s.help}>Correct an estimate if needed. Older logs may have unknown carbs/fat; leave both blank or enter both. Blank is not zero.</Text>
               <Field label="Calories (kcal)" value={kcal} onChangeText={setKcal} numeric />
               <Field label="Protein (g)" value={protein} onChangeText={setProtein} numeric />
+              <Field label="Carbs (g)" value={carbs} onChangeText={setCarbs} numeric />
+              <Field label="Fat (g)" value={fat} onChangeText={setFat} numeric />
               <Field label="Fibre (g)" value={fibre} onChangeText={setFibre} numeric />
             </>
           )}
