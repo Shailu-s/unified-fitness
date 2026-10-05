@@ -106,7 +106,10 @@ activation, authenticated device testing and photo capture remain pending.
 Anonymous auth was disabled on the owner project at the last read-only check. Keep EXPO_PUBLIC_NUTRITION_ENABLED=false and server
 MODEL_API_ENABLED unset/false until approved setup; monthly budget defaults zero.
 Never dump or commit dotenv values; mobile configuration may contain only public
-Supabase URL/publishable key, never service-role/model secrets.
+Supabase URL/publishable key, never service-role/model secrets. OpenAI is the
+selected inference provider; backend-only OPENAI_API_KEY, pinned initial model
+gpt-5-mini-2025-08-07, Responses strict JSON/store=false. No live accuracy claim
+or paid inference until test/monthly spending approval.
 Native dev-client setup and
 non-destructive project generation are prepared; native compilation/install stays
 blocked on full Xcode (currently only Command Line Tools) and Android SDK access.

@@ -12,7 +12,7 @@ Founder feedback loop: after every slice, run checks, launch a runnable version,
 
 ## Approved next phase: complete text + photo nutrition
 
-Founder approves nutrition before rings and explicitly includes photo estimation in this phase. Supabase backend is now approved; native health/GPS work remains later. Model/provider selection, private-photo processing/privacy approval and billable API spending still need approval.
+Founder approves nutrition before rings and explicitly includes photo estimation in this phase. Supabase backend is now approved; native health/GPS work remains later. OpenAI is now the approved provider. Private-photo privacy/retention disclosure, billable API spending and live-model quality/device checks still need approval.
 
 ### Nutrition phase implementation slices
 
@@ -29,7 +29,11 @@ Complete N1–N4 and founder checkpoints before moving to real rings/GPS. Each s
 
 Use Supabase: Postgres for shared estimates/jobs; TypeScript/Deno Edge Functions for bounded model orchestration; private Storage with ownership/RLS policies for photos; Auth for access control (guest sessions can avoid a mandatory signup screen). SQLite remains the local source of truth; server auth/upload/model calls never gate saving a local log. Use durable Postgres request/cache state and idempotent leased processing, not an in-memory queue or a request assumed to survive indefinitely. Current bounded processing is request-driven; retry/reopen recovers persisted work, not autonomous background execution. Supabase Edge runtime limits require bounded work; resizing happens on mobile, model inference uses an external API.
 
-Recommend a supported multimodal Flash-class API behind an adapter, with exact provider/model pinned only after a small text/image Indian-food evaluation and pricing/privacy review. Provider API key and service credentials remain server-only. Require explicit API-budget approval before real calls. Gemini is a candidate with documented image/JSON capabilities; free-tier content may be used to improve products, so personal photos need an appropriate paid/privacy-approved tier. Supabase free tier suits prototypes but can pause after inactivity; local logs remain usable and uncached estimates wait safely.
+Founder selects OpenAI using an existing API account. Pin the initial adapter to gpt-5-mini-2025-08-07, which officially supports text/images/structured output; this is a stable initial choice, not a nutrition-accuracy claim. Use Responses API strict JSON, low reasoning effort, max_output_tokens=2048, no tools, and store=false. Runtime range/assumption validation remains mandatory; refusals and incomplete output fail soft. Inline image support is adapter-only until N3 secure capture/upload ingress is wired.
+
+Published standard model rates: $0.25 per 1M input tokens and $2 per 1M output tokens, including reasoning. Provider API key and service credentials remain server-only; use OPENAI_API_KEY, never EXPO_PUBLIC_OPENAI_API_KEY. Require explicit test/monthly budget approval before real calls. API data is not used for training by default, but store=false does not remove abuse-monitoring retention (typically up to 30 days, with policy exceptions). Supabase free tier can pause after inactivity; local logs remain usable and uncached estimates wait safely.
+
+Sources: https://developers.openai.com/api/docs/models/gpt-5-mini and https://developers.openai.com/api/docs/guides/your-data .
 
 ### Updated later-feature order
 
@@ -126,6 +130,8 @@ Implementation checklist (checked means implemented/automated checks passed, not
 No native compile/install result claimed. Generated projects and JS bundles are not device builds. GPS follows after a native baseline is usable; health adapters remain a separate slice.
 
 ## Verification log
+
+- Founder selects existing OpenAI API. Gemini adapter replaced by pinned gpt-5-mini-2025-08-07 Responses adapter with strict JSON/store=false, bounded output and prepared inline-image support; photo ingress still not wired. 55 tests, TypeScript and Deno entry check pass. Function v3 ACTIVE with verify_jwt=true; HTTP 401 rejection still passes. Redeployed with MODEL_API_ENABLED explicitly false; no OpenAI calls, guest signup or spending. OPENAI_API_KEY must be added only to Supabase server secrets; test/monthly budget and authenticated device evaluation remain pending.
 
 - Owner approved create-only deployment and completed Supabase CLI login/Keychain access. Target inspected empty before change. Migration 202610050001 applied; migration dry-run now up-to-date. nutrition-estimate v1 deployed ACTIVE, verify_jwt=true, and MODEL_API_ENABLED explicitly false. Hosted checks: all four tables RLS=true; private 4 MiB image bucket; authenticated role lacks cache SELECT and privileged claim EXECUTE; unauthenticated function call HTTP 401; paused RPC returns disabled with zero request/cache/budget rows. No guest user, image upload, model call or spend occurred. Anonymous sign-in is still disabled; authenticated end-to-end/device inference unverified. CLI metadata directories ignored; no login token/password stored in Git.
 

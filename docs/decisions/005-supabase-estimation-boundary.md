@@ -11,7 +11,9 @@ Shared cache and budget tables have RLS enabled and no client read/write policie
 
 The Edge Function retains platform verify_jwt = true and additionally validates the user token with Supabase Auth. Owner identity never comes from the request body. Bounded JSON input accepts only client ID, text input type, meal description and portion. Server computes the cache key and validates all model results. Generic error codes, not keys/payloads, cross the boundary. Cached results require no model call; pending requests retry via durable state/leases. Processing is request-driven and bounded, not an autonomous forever-running server worker.
 
-A Gemini HTTP adapter is prepared, but no model is selected or quality-validated yet. Server inference is disabled unless MODEL_API_ENABLED=true, GEMINI_API_KEY and NUTRITION_MODEL are set, and a finite positive MODEL_MAX_CALL_USD is configured. A positive approved monthly nutrition_budgets limit is additionally required. No free-tier private-photo processing or automatic billing approval is implied.
+Founder selects OpenAI. The adapter pins gpt-5-mini-2025-08-07 and uses Responses API strict JSON, low reasoning effort, max_output_tokens=2048, no tools and store=false. It rejects refusal/incomplete/empty/invalid results and supports one bounded inline JPEG/PNG/WebP image for later N3 integration, not public/arbitrary image URLs. HTTP requests never put credentials in URL or payload. Range/assumption validation remains independent of the provider schema.
+
+Server inference is disabled unless MODEL_API_ENABLED=true, OPENAI_API_KEY is present, NUTRITION_MODEL matches the pinned snapshot (the code default), and a finite positive MODEL_MAX_CALL_USD is configured. A positive approved monthly nutrition_budgets limit is additionally required. Official standard rates are $0.25/1M input and $2/1M output tokens (reasoning included); quality and actual token usage require a bounded live evaluation. Existing OpenAI account ownership is not approval to spend. store=false disables Responses application storage, not abuse-monitoring retention. No private photo has been sent to OpenAI.
 
 ## Mobile bridge
 

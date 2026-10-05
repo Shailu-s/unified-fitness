@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { createNutritionHandler } from '../../supabase/functions/_shared/handler.ts';
-import { createGeminiEstimator } from '../../supabase/functions/_shared/model.ts';
+import { createOpenAIEstimator, OPENAI_NUTRITION_MODEL } from '../../supabase/functions/_shared/model.ts';
 
 const estimate = { version: 1, model: 'test-fixture', kcal: 610, protein: 22, carbs: 90, fat: 16, fibre: 10, assumptions: ['Test fixture only'] };
 const input = { clientId: 'a'.repeat(32), inputType: 'text', name: '2 roti dal chawal', portion: '1 katori' };
@@ -82,21 +82,49 @@ test('invalid or failed model output is never completed or returned as nutrition
   assert.deepEqual(await response.json(), { error: 'model_failed' });
 });
 
-test('model boundary sends structured bounded request without putting API key in URL', async () => {
+const completed = (content) => ({ status: 'completed', output: [{ type: 'message', content }] });
+const outputText = () => ({ type: 'output_text', text: JSON.stringify(estimate) });
+
+test('OpenAI boundary sends pinned, bounded strict JSON request with storage disabled and no key in URL', async () => {
   let observed;
-  const model = createGeminiEstimator('fake-test-key', 'gemini-test-fixture', async (url, options) => {
+  const model = createOpenAIEstimator('fake-test-key', OPENAI_NUTRITION_MODEL, async (url, options) => {
     observed = { url, options };
-    return Response.json({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: JSON.stringify(estimate) }] } }] });
+    return Response.json(completed([outputText()]));
   });
-  assert.deepEqual(await model(input), { ...estimate, model: 'gemini-test-fixture' });
+  assert.deepEqual(await model(input), { ...estimate, model: OPENAI_NUTRITION_MODEL });
+  assert.equal(observed.url, 'https://api.openai.com/v1/responses');
   assert.equal(observed.url.includes('fake-test-key'), false);
   const body = JSON.parse(observed.options.body);
-  assert.equal(body.generationConfig.maxOutputTokens, 2048);
-  assert.equal(body.generationConfig.responseMimeType, 'application/json');
-  assert.equal(observed.options.headers['x-goog-api-key'], 'fake-test-key');
+  assert.equal(body.model, OPENAI_NUTRITION_MODEL);
+  assert.equal(body.max_output_tokens, 2048);
+  assert.equal(body.text.format.type, 'json_schema');
+  assert.equal(body.text.format.strict, true);
+  assert.equal(body.store, false);
+  assert.equal(body.reasoning.effort, 'low');
+  assert.equal(observed.options.headers.Authorization, 'Bearer fake-test-key');
 });
 
-test('model boundary rejects truncated output and missing model configuration', async () => {
-  await assert.rejects(createGeminiEstimator('', 'unconfigured')(input), /configured/);
-  await assert.rejects(createGeminiEstimator('fake', 'gemini-test-fixture', async () => Response.json({ candidates: [{ finishReason: 'MAX_TOKENS' }] }))(input), /Incomplete/);
+test('OpenAI boundary rejects refusal, truncation, empty output, invalid JSON and missing config', async () => {
+  await assert.rejects(createOpenAIEstimator('', OPENAI_NUTRITION_MODEL)(input), /configured/);
+  await assert.rejects(createOpenAIEstimator('fake', 'unsupported-model')(input), /configured/);
+  for (const response of [
+    { status: 'incomplete', output: [] },
+    completed([{ type: 'refusal', refusal: 'test refusal' }]),
+    completed([]),
+    completed([{ type: 'output_text', text: 'invalid JSON' }]),
+  ]) await assert.rejects(createOpenAIEstimator('fake', OPENAI_NUTRITION_MODEL, async () => Response.json(response))(input));
+});
+
+test('OpenAI image input is inline and bounded; URLs and unsupported image formats are not accepted', async () => {
+  let observed;
+  const model = createOpenAIEstimator('fake', OPENAI_NUTRITION_MODEL, async (_url, options) => {
+    observed = JSON.parse(options.body);
+    return Response.json(completed([outputText()]));
+  });
+  await model(input, { mimeType: 'image/jpeg', base64: 'AAEC' });
+  assert.equal(observed.input[0].content[1].type, 'input_image');
+  assert.equal(observed.input[0].content[1].image_url, 'data:image/jpeg;base64,AAEC');
+  await assert.rejects(model(input, { mimeType: 'image/svg+xml', base64: 'AAEC' }), /image/);
+  await assert.rejects(model(input, { mimeType: 'image/jpeg', base64: 'https://example.com/photo.jpg' }), /image/);
+  await assert.rejects(model(input, { mimeType: 'image/jpeg', base64: 'A'.repeat(2800004) }), /image/);
 });

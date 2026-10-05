@@ -59,7 +59,7 @@ Nutrition foundation uses additive schema v2: jobs persist with meals, worker le
 and revisions reject stale results, and generic estimates have a versioned local
 cache. Unknown carbs/fat show a dash. New logs have no custom-macro entry requirement;
 existing values/future estimates can be corrected. A gated foreground Supabase worker
-and bounded Gemini adapter are prepared; neither is live by default. Photo capture,
+and bounded OpenAI adapter are prepared; neither is live by default. Photo capture,
 upload/vision and voice are not implemented yet. Test values exist only in tests.
 
 Supabase public config is validated; migration and nutrition-estimate v1 are deployed.
@@ -76,9 +76,12 @@ validates public credentials without printing them; normal Expo scripts run it f
 Backend code: `supabase/migrations/` and `supabase/functions/nutrition-estimate/`.
 The function retains JWT verification, checks user identity, and serves shared cache
 or coalesces durable requests. Monthly model budget defaults zero; model calls also
-require server-only GEMINI_API_KEY, NUTRITION_MODEL, MODEL_MAX_CALL_USD and explicit
+require server-only OPENAI_API_KEY, NUTRITION_MODEL, MODEL_MAX_CALL_USD and explicit
 MODEL_API_ENABLED=true. Maximum call cost must be a reviewed upper bound for the
-chosen model/token limits. Do not turn flags on before privacy/budget approval.
+chosen model/token limits. Current snapshot: gpt-5-mini-2025-08-07 (code default).
+Adapter uses strict JSON and store=false; abuse-monitoring retention may still apply.
+Do not turn flags on before privacy/budget approval. Inline image adapter support
+is prepared; camera/gallery/private-upload ingress is still a follow-up.
 
 Backend checks: `npm exec --yes --package=deno@2.9.6 -- deno check
 supabase/functions/nutrition-estimate/index.ts` from repo root. Postgres tests use
