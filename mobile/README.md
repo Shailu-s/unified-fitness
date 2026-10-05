@@ -62,13 +62,15 @@ existing values/future estimates can be corrected. A gated foreground Supabase w
 and bounded Gemini adapter are prepared; neither is live by default. Photo capture,
 upload/vision and voice are not implemented yet. Test values exist only in tests.
 
-Supabase public config is validated, but remote schema/function deployment is pending.
+Supabase public config is validated; migration and nutrition-estimate v1 are deployed.
+Hosted permission/JWT rejection checks pass; model calls remain explicitly disabled.
+Guest auth and approved model/privacy/budget configuration still need setup.
 Use `mobile/.env.example` as the template
 for `mobile/.env.local`; fill only the publishable/legacy anon client key there.
 Project URL is public. Service-role and model keys belong only in backend secrets,
 never EXPO_PUBLIC variables or chat. Dotenv files are ignored; do not reset or
 uninstall Expo Go to test the migration. Keep EXPO_PUBLIC_NUTRITION_ENABLED=false
-until deployment/guest-auth/model-budget setup is approved. `yarn check:config`
+until guest-auth/model-budget setup and authenticated testing are approved. `yarn check:config`
 validates public credentials without printing them; normal Expo scripts run it first.
 
 Backend code: `supabase/migrations/` and `supabase/functions/nutrition-estimate/`.

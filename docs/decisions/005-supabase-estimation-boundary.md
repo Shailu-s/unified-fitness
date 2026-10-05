@@ -1,7 +1,7 @@
 # 005: Authenticated Supabase estimation boundary
 
 Date: 2026-10-05
-Status: Implemented and locally verified; remote deployment/live inference pending approval
+Status: Deployed with inference paused; model/privacy/budget and authenticated device checks pending
 
 ## Decision
 
@@ -23,4 +23,10 @@ EXPO_PUBLIC_NUTRITION_ENABLED defaults false. Until explicit activation, app sta
 
 54 Node tests pass, plus real Postgres RPC/budget/coalescing/RLS/photo-owner tests using isolated auth/storage fixtures. The Deno entry point and shared TypeScript check, SDK compatibility, and both mobile bundles pass. Postgres fixture tests are not a deployed Supabase end-to-end test. The test container was stopped without deleting its data or touching other containers.
 
-Only a read-only auth-settings HTTP check was made against the owner's project: public config works; anonymous sign-in was disabled at that time. No remote schema, bucket, user, model call or billing change was created. Owner deployment access/approval, guest-auth setup, model/privacy/budget approval, and real iPhone/Android testing remain required. Camera/gallery, actual image persistence/upload/recognition, media retention/export, and rings/GPS are follow-on work in the approved plan.
+At the local-code checkpoint, only a read-only auth-settings HTTP check was made against the owner's project: public config works; anonymous sign-in was disabled at that time. No remote schema, bucket, user, model call or billing change was created. Owner deployment access/approval, guest-auth setup, model/privacy/budget approval, and real iPhone/Android testing remain required. Camera/gallery, actual image persistence/upload/recognition, media retention/export, and rings/GPS are follow-on work in the approved plan.
+
+## Hosted deployment checkpoint
+
+Owner explicitly approved creating the nutrition tables/private photo bucket and authenticated function with model calls disabled. Supabase CLI 2.118.0 was pinned (published 2026-09-25). After owner browser login and Keychain permission, the empty target was inspected, the migration dry-run reviewed, and standard db push applied only migration 202610050001 with no seeds/custom roles/vault updates. Server MODEL_API_ENABLED=false was set explicitly before deploying nutrition-estimate v1.
+
+Management checks report function ACTIVE and verify_jwt=true; remote migration history is up to date. All four tables have RLS enabled, authenticated callers have no shared-cache read/claim-RPC execution privilege, and the photo bucket is private with 4 MiB image limits. An unauthenticated HTTP call returned 401. A paused RPC check returned disabled and left request/cache/budget rows at zero. No guest signup, actual photo upload, inference or spending was performed. Anonymous auth remains disabled, and authenticated execution/paid-model quality still need separate approval/testing. CLI metadata is ignored; tokens and passwords were neither exposed nor committed.

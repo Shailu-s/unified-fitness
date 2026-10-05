@@ -98,10 +98,12 @@ and full offline cold-start verification are pending. GPS, health integration,
 live LLM estimates, sync, and billing are not built. Nutrition foundation now uses
 additive SQLite schema v2: full macro fields, text/photo metadata, revisions,
 durable jobs with leases/retries, local cache and late-result/correction protection.
-Supabase backend schema/authenticated Edge API and a gated mobile worker are
-prepared and locally tested. Remote deployment, model/privacy/budget setup and
-photo capture remain pending. Anonymous auth was disabled on the owner project
-at the last read-only check. Keep EXPO_PUBLIC_NUTRITION_ENABLED=false and server
+Supabase backend schema/private bucket and authenticated nutrition-estimate v1
+are deployed, ACTIVE with JWT verification; hosted RLS/privilege/unauthenticated
+rejection and paused-state checks pass. Server MODEL_API_ENABLED=false, no model
+calls made. Gated mobile worker remains off. Model/privacy/budget setup, guest-auth
+activation, authenticated device testing and photo capture remain pending.
+Anonymous auth was disabled on the owner project at the last read-only check. Keep EXPO_PUBLIC_NUTRITION_ENABLED=false and server
 MODEL_API_ENABLED unset/false until approved setup; monthly budget defaults zero.
 Never dump or commit dotenv values; mobile configuration may contain only public
 Supabase URL/publishable key, never service-role/model secrets.

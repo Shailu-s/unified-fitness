@@ -19,13 +19,13 @@ Founder approves nutrition before rings and explicitly includes photo estimation
 | Slice | Deliverable | Acceptance gate |
 |---|---|---|
 | N1 — VERIFY | Shared nutrition data/queue/cache foundation | Additive migration, full-macro/unknown fields, text/photo input metadata, durable jobs/leases, local cache, revision/correction protection and status UI implemented. Photo metadata is tested; actual capture/durable files are a subsequent N3 gate. Founder migration/reopen check pending. |
-| N2 — DEPLOYMENT PENDING | Backend + typed estimates | Supabase schema/private bucket/RLS, service-only cache/claim/budget RPCs, JWT-authenticated Edge API, bounded model adapter, secure guest-session/mobile worker bridge implemented and locally tested. Worker/model calls default off; remote deployment, anonymous-auth enablement, model/privacy/budget approval and real-device inference pending. |
+| N2 — DEPLOYED / INFERENCE PAUSED | Backend + typed estimates | Approved migration applied and nutrition-estimate v1 ACTIVE with JWT verification. Hosted RLS/private-bucket/privilege checks, HTTP 401 rejection, paused RPC and migration-history checks pass. No model/request/cache/budget data created. Anonymous auth, model/privacy/budget approval and authenticated real-device inference still pending; app/server processing stays off. |
 | N3 | Photo capture/gallery + vision estimates | SDK-compatible photo input, resizing/metadata removal, private uploads, food/portion extraction, shared nutrition pipeline, editable visible assumptions. New photos may require a vision call even when nutrition is cached. Raw photos never enter the shared meal cache. |
 | N4 | Corrections, privacy, reliability and quality | Portion/food correction UX; late results cannot overwrite edits. Test offline capture, kill/reopen, denied camera access, model failure/timeouts, duplicate jobs, invalid outputs, image-size limits, and both OSes. Evaluate Indian mixed meals against known-portion/reference cases; do not claim validated photo accuracy without evidence. Update history/export for new nutrition data and document photo retention/export policy. |
 
 Complete N1–N4 and founder checkpoints before moving to real rings/GPS. Each slice remains a meaningful commit/test handoff rather than one giant feature commit. Voice later feeds the same nutrition pipeline.
 
-### Approved backend: Supabase (integration pending)
+### Approved backend: Supabase (deployed; inference paused)
 
 Use Supabase: Postgres for shared estimates/jobs; TypeScript/Deno Edge Functions for bounded model orchestration; private Storage with ownership/RLS policies for photos; Auth for access control (guest sessions can avoid a mandatory signup screen). SQLite remains the local source of truth; server auth/upload/model calls never gate saving a local log. Use durable Postgres request/cache state and idempotent leased processing, not an in-memory queue or a request assumed to survive indefinitely. Current bounded processing is request-driven; retry/reopen recovers persisted work, not autonomous background execution. Supabase Edge runtime limits require bounded work; resizing happens on mobile, model inference uses an external API.
 
@@ -127,6 +127,8 @@ No native compile/install result claimed. Generated projects and JS bundles are 
 
 ## Verification log
 
+- Owner approved create-only deployment and completed Supabase CLI login/Keychain access. Target inspected empty before change. Migration 202610050001 applied; migration dry-run now up-to-date. nutrition-estimate v1 deployed ACTIVE, verify_jwt=true, and MODEL_API_ENABLED explicitly false. Hosted checks: all four tables RLS=true; private 4 MiB image bucket; authenticated role lacks cache SELECT and privileged claim EXECUTE; unauthenticated function call HTTP 401; paused RPC returns disabled with zero request/cache/budget rows. No guest user, image upload, model call or spend occurred. Anonymous sign-in is still disabled; authenticated end-to-end/device inference unverified. CLI metadata directories ignored; no login token/password stored in Git.
+
 - N2 backend and mobile bridge implemented: 54 Node tests, isolated real Postgres RPC/coalescing/budget/RLS/storage-owner tests, Deno entry check, TypeScript, SDK compatibility and both mobile bundles pass. Public config was consumed only by runtime validation; key values were not shown. Read-only owner-project auth settings returned HTTP 200 and anonymous sign-in disabled. Remote deployment and live model tests have not run. Client worker, model switch and positive monthly budget all require explicit setup/approval; default is paused/zero budget.
 
 - Supabase approved; owner provided public project URL. N1 local foundation implemented and verified with 39 tests, TypeScript, and iOS/Android JS bundle exports. Tests use fixtures, not live model data. Supabase CLI/Deno are absent; Docker is available. No remote migration, authentication or paid inference was executed. Dotenv files are now ignored; existing dotenv values were not read. Live backend and actual photo capture/upload/vision remain pending.
@@ -184,7 +186,7 @@ On both iOS and Android, with an installed compatible client/build:
 
 Founder tests N1 migration/reopen: reload existing Expo Go project without clearing data; verify old logs/manual values remain, new logs save as Queued for estimate, portion edits persist, and unknown carbs/fat show a dash. No automatic numbers are expected before live backend setup.
 
-Next obtain owner deployment approval/access, apply the create-only Supabase migration and deploy nutrition-estimate with JWT verification enabled. Enable guest auth with appropriate abuse protection. Then select a supported model, review privacy/rates, configure server-only secrets and approved monthly limit, and explicitly activate client/model processing for a bounded real-device smoke test. No paid call is authorized by the existing public-key setup. Photo capture/private uploads/vision remain in this nutrition phase before rings/GPS.
+Deployment is complete and paused. Owner enables guest auth with appropriate abuse protection; then select a supported model, review privacy/rates, configure server-only secrets and an explicitly approved test/monthly spending limit, and activate client/model processing for a bounded real-device smoke test. Neither deployment approval nor public-key setup authorizes paid model calls. Photo capture/private uploads/vision remain in this nutrition phase before rings/GPS.
 
 Native installations remain paused until the researched compatible Mac/SDK route is approved. Keep health/GPS feasibility tests early and explicit; both native install gates remain incomplete. Export is a backup/data-ownership requirement, not an expanded daily feature.
 
@@ -194,4 +196,4 @@ Native installations remain paused until the researched compatible Mac/SDK route
 - Xiaomi/Realme access and standalone iOS/Android builds needed for full offline/native verification.
 - Slice 2.1: full Xcode and Apple Account/Personal Team signing are unavailable here; founder handles installation and credentials locally. Free provisioning expires after seven days. Android SDK/JDK/device access also required. Existing scaffold bundle ID must be checked during signing; ownership/availability not assumed.
 - Health ring semantics: stand-hour data cannot be assumed equivalent across OSes.
-- LLM provider, backend hosting, auth/sync provider, and paid tier: not selected yet; record decisions when their slices start.
+- Supabase backend deployed with inference off; guest auth is disabled. LLM model/privacy/spending approval, account/sync behavior and paid tier remain undecided; record decisions when approved.

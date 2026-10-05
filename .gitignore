@@ -16,3 +16,5 @@ web-build/
 .env
 .env.*
 !.env.example
+/supabase/.temp/
+/supabase/.branches/
