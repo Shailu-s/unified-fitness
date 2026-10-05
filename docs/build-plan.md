@@ -12,20 +12,20 @@ Founder feedback loop: after every slice, run checks, launch a runnable version,
 
 ## Approved next phase: complete text + photo nutrition
 
-Founder approves nutrition before rings and explicitly includes photo estimation in this phase. Supabase backend is now approved; native health/GPS work remains later. OpenAI is now the approved provider. Private-photo privacy/retention disclosure, billable API spending and live-model quality/device checks still need approval.
+Founder approves nutrition before rings and explicitly includes photo estimation in this phase. Supabase backend is now approved; native health/GPS work remains later. OpenAI is now the approved provider. Founder approves US$1 total initial testing spend. First authenticated text estimate and same/cross-user cache reuse pass; private-photo privacy/retention disclosure and broader quality/device checks remain pending.
 
 ### Nutrition phase implementation slices
 
 | Slice | Deliverable | Acceptance gate |
 |---|---|---|
 | N1 — VERIFY | Shared nutrition data/queue/cache foundation | Additive migration, full-macro/unknown fields, text/photo input metadata, durable jobs/leases, local cache, revision/correction protection and status UI implemented. Photo metadata is tested; actual capture/durable files are a subsequent N3 gate. Founder migration/reopen check pending. |
-| N2 — DEPLOYED / INFERENCE PAUSED | Backend + typed estimates | Approved migration applied and nutrition-estimate v1 ACTIVE with JWT verification. Hosted RLS/private-bucket/privilege checks, HTTP 401 rejection, paused RPC and migration-history checks pass. No model/request/cache/budget data created. Anonymous auth, model/privacy/budget approval and authenticated real-device inference still pending; app/server processing stays off. |
+| N2 — VERIFY ON PHONE | Backend + typed estimates | Live guest auth/OpenAI response, idempotent retry and normalized same/cross-user shared cache pass. One ready cache item/five distinct completed requests consume only one $0.01 reservation. US$1 total test cap approved; backend and local development worker enabled. Founder iPhone correction/offline/reopen and Android checks pending; nutrition accuracy not validated. |
 | N3 | Photo capture/gallery + vision estimates | SDK-compatible photo input, resizing/metadata removal, private uploads, food/portion extraction, shared nutrition pipeline, editable visible assumptions. New photos may require a vision call even when nutrition is cached. Raw photos never enter the shared meal cache. |
 | N4 | Corrections, privacy, reliability and quality | Portion/food correction UX; late results cannot overwrite edits. Test offline capture, kill/reopen, denied camera access, model failure/timeouts, duplicate jobs, invalid outputs, image-size limits, and both OSes. Evaluate Indian mixed meals against known-portion/reference cases; do not claim validated photo accuracy without evidence. Update history/export for new nutrition data and document photo retention/export policy. |
 
 Complete N1–N4 and founder checkpoints before moving to real rings/GPS. Each slice remains a meaningful commit/test handoff rather than one giant feature commit. Voice later feeds the same nutrition pipeline.
 
-### Approved backend: Supabase (deployed; inference paused)
+### Approved backend: Supabase (live text testing; capped spend)
 
 Use Supabase: Postgres for shared estimates/jobs; TypeScript/Deno Edge Functions for bounded model orchestration; private Storage with ownership/RLS policies for photos; Auth for access control (guest sessions can avoid a mandatory signup screen). SQLite remains the local source of truth; server auth/upload/model calls never gate saving a local log. Use durable Postgres request/cache state and idempotent leased processing, not an in-memory queue or a request assumed to survive indefinitely. Current bounded processing is request-driven; retry/reopen recovers persisted work, not autonomous background execution. Supabase Edge runtime limits require bounded work; resizing happens on mobile, model inference uses an external API.
 
@@ -131,6 +131,8 @@ No native compile/install result claimed. Generated projects and JS bundles are 
 
 ## Verification log
 
+- Founder added OPENAI_API_KEY only to server secrets, enabled/saved anonymous auth and explicitly approved US$1 total testing cap. Configure only the current UTC month at limit_usd=1; future months still default zero (no automatic renewal of this approval). MODEL_MAX_CALL_USD=0.01 reserves conservatively per call; bounded pinned-model text/image token costs fit this ceiling, but reservation is not measured invoice spend. Authenticated text smoke passed; same-job, normalized same-user and cross-user repeated results were identical. Ledger stayed $0.01 reserved with one ready cache/five completed request IDs across runs. First result for 2 roti + dal was 510 kcal with explicit 200 g dal/oil assumptions: no independent accuracy validation. Three test guest users were created; no personal photos/tokens were stored in Git. Live smoke script requires NUTRITION_SMOKE_APPROVED=true and is not part of automatic tests. Local development-only override enables mobile worker; public key file untouched, no production flag defaults changed. Expo Go restarted on 8082; iOS preview HTTP 200. 56 automated tests/typecheck and both bundles pass; founder phone tests remain pending.
+
 - Founder selects existing OpenAI API. Gemini adapter replaced by pinned gpt-5-mini-2025-08-07 Responses adapter with strict JSON/store=false, bounded output and prepared inline-image support; photo ingress still not wired. 55 tests, TypeScript and Deno entry check pass. Function v3 ACTIVE with verify_jwt=true; HTTP 401 rejection still passes. Redeployed with MODEL_API_ENABLED explicitly false; no OpenAI calls, guest signup or spending. OPENAI_API_KEY must be added only to Supabase server secrets; test/monthly budget and authenticated device evaluation remain pending.
 
 - Owner approved create-only deployment and completed Supabase CLI login/Keychain access. Target inspected empty before change. Migration 202610050001 applied; migration dry-run now up-to-date. nutrition-estimate v1 deployed ACTIVE, verify_jwt=true, and MODEL_API_ENABLED explicitly false. Hosted checks: all four tables RLS=true; private 4 MiB image bucket; authenticated role lacks cache SELECT and privileged claim EXECUTE; unauthenticated function call HTTP 401; paused RPC returns disabled with zero request/cache/budget rows. No guest user, image upload, model call or spend occurred. Anonymous sign-in is still disabled; authenticated end-to-end/device inference unverified. CLI metadata directories ignored; no login token/password stored in Git.
@@ -190,9 +192,9 @@ On both iOS and Android, with an installed compatible client/build:
 
 ## Next action
 
-Founder tests N1 migration/reopen: reload existing Expo Go project without clearing data; verify old logs/manual values remain, new logs save as Queued for estimate, portion edits persist, and unknown carbs/fat show a dash. No automatic numbers are expected before live backend setup.
+Founder reloads the existing Expo Go project without clearing data. Verify old logs/manual corrections remain, new meals save instantly and then estimate, portion edits persist, and unknown carbs/fat show a dash until available. Do not uninstall or reset the app.
 
-Deployment is complete and paused. Owner enables guest auth with appropriate abuse protection; then select a supported model, review privacy/rates, configure server-only secrets and an explicitly approved test/monthly spending limit, and activate client/model processing for a bounded real-device smoke test. Neither deployment approval nor public-key setup authorizes paid model calls. Photo capture/private uploads/vision remain in this nutrition phase before rings/GPS.
+Founder reloads Expo Go and tests immediate local save → automatic estimate, repeats a phrase, edits portion/corrects numbers, and captures an offline meal that estimates after reconnect/foreground. Prior unestimated logs may process when reopened; all requests stay inside the approved US$1 test cap. Treat numbers as estimates and inspect assumptions; do not mark photo/nutrition accuracy or Android/native behavior validated. After feedback, proceed to photo capture/private upload/vision within this nutrition phase before rings/GPS. Do not raise budget without separate approval.
 
 Native installations remain paused until the researched compatible Mac/SDK route is approved. Keep health/GPS feasibility tests early and explicit; both native install gates remain incomplete. Export is a backup/data-ownership requirement, not an expanded daily feature.
 
@@ -202,4 +204,4 @@ Native installations remain paused until the researched compatible Mac/SDK route
 - Xiaomi/Realme access and standalone iOS/Android builds needed for full offline/native verification.
 - Slice 2.1: full Xcode and Apple Account/Personal Team signing are unavailable here; founder handles installation and credentials locally. Free provisioning expires after seven days. Android SDK/JDK/device access also required. Existing scaffold bundle ID must be checked during signing; ownership/availability not assumed.
 - Health ring semantics: stand-hour data cannot be assumed equivalent across OSes.
-- Supabase backend deployed with inference off; guest auth is disabled. LLM model/privacy/spending approval, account/sync behavior and paid tier remain undecided; record decisions when approved.
+- Live text testing enabled under US$1 total cap. Model quality, private-photo privacy/retention/capture/vision, account/sync behavior and paid tier remain incomplete; no additional spend approved.

@@ -59,19 +59,24 @@ Nutrition foundation uses additive schema v2: jobs persist with meals, worker le
 and revisions reject stale results, and generic estimates have a versioned local
 cache. Unknown carbs/fat show a dash. New logs have no custom-macro entry requirement;
 existing values/future estimates can be corrected. A gated foreground Supabase worker
-and bounded OpenAI adapter are prepared; neither is live by default. Photo capture,
-upload/vision and voice are not implemented yet. Test values exist only in tests.
+and bounded OpenAI adapter are implemented. Production defaults remain off;
+founder development preview is enabled under an approved US$1 total test cap.
+Photo capture/upload/vision and voice are not implemented yet. Seed/test food data
+is not inserted into local app logs.
 
 Supabase public config is validated; migration and nutrition-estimate v1 are deployed.
-Hosted permission/JWT rejection checks pass; model calls remain explicitly disabled.
-Guest auth and approved model/privacy/budget configuration still need setup.
+Hosted permission/JWT checks pass. Guest auth and live OpenAI text smoke now pass;
+idempotent/normalized/cross-user cache checks reuse one inference reservation.
+Broader meal accuracy and physical-device behavior are not validated.
 Use `mobile/.env.example` as the template
 for `mobile/.env.local`; fill only the publishable/legacy anon client key there.
 Project URL is public. Service-role and model keys belong only in backend secrets,
 never EXPO_PUBLIC variables or chat. Dotenv files are ignored; do not reset or
 uninstall Expo Go to test the migration. Keep EXPO_PUBLIC_NUTRITION_ENABLED=false
-until guest-auth/model-budget setup and authenticated testing are approved. `yarn check:config`
-validates public credentials without printing them; normal Expo scripts run it first.
+unless guest-auth/model-budget setup is explicitly approved. Founder preview uses
+an ignored mobile/.env.development.local override containing only the enabled flag;
+public URL/key remain in .env.local. `yarn check:config` validates public config
+without printing credentials; normal Expo scripts run it first.
 
 Backend code: `supabase/migrations/` and `supabase/functions/nutrition-estimate/`.
 The function retains JWT verification, checks user identity, and serves shared cache
@@ -88,6 +93,14 @@ supabase/functions/nutrition-estimate/index.ts` from repo root. Postgres tests u
 `supabase/tests/bootstrap.sql`, migration, then `supabase/tests/nutrition.sql` in an
 isolated fresh database, never on the hosted project. Bootstrap files emulate
 Supabase roles/auth/storage for tests and must not be applied to production.
+
+Live smoke (explicit spending approval required): from mobile, run
+`NUTRITION_SMOKE_APPROVED=true node --env-file=.env.local scripts/smoke-nutrition.mjs`.
+This creates anonymous test users and can call OpenAI, then checks same-job and
+normalized/cross-user shared-cache reuse. Never run automatically in CI. Approved
+test cap is US$1 total; $0.01 is reserved conservatively per model call, not measured
+invoice spend. Only the current UTC month has a positive limit; new months do not
+renew this approval.
 
 ## Structure
 

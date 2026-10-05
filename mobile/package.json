@@ -12,7 +12,7 @@
     "ios:device": "yarn check:config && expo run:ios --device --port 8083",
     "android:device": "yarn check:config && expo run:android --device --port 8083",
     "native:generate": "yarn check:config && expo prebuild --no-install --no-clean --skip-dependency-update react,react-native --template expo-template-bare-minimum@57.0.26",
-    "check:config": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/check-public-config.mjs",
+    "check:config": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --env-file-if-exists=.env.development.local scripts/check-public-config.mjs",
     "typecheck": "tsc --noEmit",
     "test": "node --test tests/*.test.mjs"
   },

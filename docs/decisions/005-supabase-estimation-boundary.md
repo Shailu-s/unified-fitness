@@ -1,7 +1,7 @@
 # 005: Authenticated Supabase estimation boundary
 
 Date: 2026-10-05
-Status: Deployed with inference paused; model/privacy/budget and authenticated device checks pending
+Status: Live text smoke/caching verified under approved US$1 cap; physical-device and photo quality gates pending
 
 ## Decision
 
@@ -32,3 +32,11 @@ At the local-code checkpoint, only a read-only auth-settings HTTP check was made
 Owner explicitly approved creating the nutrition tables/private photo bucket and authenticated function with model calls disabled. Supabase CLI 2.118.0 was pinned (published 2026-09-25). After owner browser login and Keychain permission, the empty target was inspected, the migration dry-run reviewed, and standard db push applied only migration 202610050001 with no seeds/custom roles/vault updates. Server MODEL_API_ENABLED=false was set explicitly before deploying nutrition-estimate v1.
 
 Management checks report function ACTIVE and verify_jwt=true; remote migration history is up to date. All four tables have RLS enabled, authenticated callers have no shared-cache read/claim-RPC execution privilege, and the photo bucket is private with 4 MiB image limits. An unauthenticated HTTP call returned 401. A paused RPC check returned disabled and left request/cache/budget rows at zero. No guest signup, actual photo upload, inference or spending was performed. Anonymous auth remains disabled, and authenticated execution/paid-model quality still need separate approval/testing. CLI metadata is ignored; tokens and passwords were neither exposed nor committed.
+
+## Approved live smoke checkpoint
+
+Founder enabled anonymous sign-in, configured server-only OPENAI_API_KEY and explicitly approved US$1 total test spend. Only the current UTC month's budget was set to one dollar; future months keep the default zero and require new approval. Server inference is enabled with pinned model and $0.01 conservative per-call reservation. At published rates, bounded input plus 2048 total output/reasoning tokens (and at most one capped image in the future adapter) fit below the reservation. The ledger is conservative, not the actual OpenAI invoice.
+
+Authenticated live text returned valid structured nutrition; same request ID, normalized repeated phrasing and a second guest returned identical results. Hosted verification showed one ready cache item, five completed request IDs and $0.01 reserved across two smoke runs: repeats did not consume another inference reservation. Three anonymous test users were created, with session tokens held only in process memory. The sample result has no independent nutrition reference and does not establish accuracy. No photo capture/upload/model processing occurred.
+
+Live smoke script now requires NUTRITION_SMOKE_APPROVED=true, avoiding accidental paid test runs. A local ignored .env.development.local sets EXPO_PUBLIC_NUTRITION_ENABLED=true for founder preview only, without rewriting credential files or changing production defaults. Config guard loads that development override; Expo Go was restarted and the iOS preview bundle returned HTTP 200. Actual SecureStore/device estimates, corrections, offline/reopen and Android behavior remain founder gates.

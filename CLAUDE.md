@@ -95,21 +95,24 @@ unknown nutrition. Slice 1.2 adds separate calendar history and local JSON expor
 (profile + all saved meals) through the native share sheet. Activity remains demo
 data. iPhone Expo Go reopen persistence passed per founder; native history/sharing
 and full offline cold-start verification are pending. GPS, health integration,
-live LLM estimates, sync, and billing are not built. Nutrition foundation now uses
+sync and billing are not built. Live text nutrition is now enabled for founder
+testing. Nutrition foundation now uses
 additive SQLite schema v2: full macro fields, text/photo metadata, revisions,
 durable jobs with leases/retries, local cache and late-result/correction protection.
 Supabase backend schema/private bucket and authenticated nutrition-estimate v1
 are deployed, ACTIVE with JWT verification; hosted RLS/privilege/unauthenticated
-rejection and paused-state checks pass. Server MODEL_API_ENABLED=false, no model
-calls made. Gated mobile worker remains off. Model/privacy/budget setup, guest-auth
-activation, authenticated device testing and photo capture remain pending.
-Anonymous auth was disabled on the owner project at the last read-only check. Keep EXPO_PUBLIC_NUTRITION_ENABLED=false and server
-MODEL_API_ENABLED unset/false until approved setup; monthly budget defaults zero.
+rejection checks pass. Guest auth and a real OpenAI text response now pass, including
+same-ID/same-user/cross-user cache reuse. Founder approves US$1 total initial testing,
+configured only for the current UTC month; future months default zero. Server live
+flag is on with $0.01 conservative per-call reservation (not actual invoice spend).
+Mobile dev-only override enables foreground processing; production defaults stay
+off. Do not raise/renew budget without approval. Actual phone correction/offline/
+reopen, Android, photo capture and broader meal accuracy remain unverified.
 Never dump or commit dotenv values; mobile configuration may contain only public
 Supabase URL/publishable key, never service-role/model secrets. OpenAI is the
 selected inference provider; backend-only OPENAI_API_KEY, pinned initial model
 gpt-5-mini-2025-08-07, Responses strict JSON/store=false. No live accuracy claim
-or paid inference until test/monthly spending approval.
+or extra paid inference beyond the approved US$1 total testing cap.
 Native dev-client setup and
 non-destructive project generation are prepared; native compilation/install stays
 blocked on full Xcode (currently only Command Line Tools) and Android SDK access.

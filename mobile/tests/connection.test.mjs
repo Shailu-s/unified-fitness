@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { spawnSync } from 'node:child_process';
 import { validateSupabaseConfig } from '../src/lib/supabaseConfig.ts';
 import { createSecureSessionStorage } from '../src/lib/secureSessionStorage.ts';
 import { processNutritionJobs, NutritionTransportError } from '../src/lib/nutritionWorker.ts';
@@ -17,6 +18,15 @@ test('public config rejects privileged keys and API-path URLs without exposing v
   for (const key of ['sb_secret_fake-fixture', jwt('service_role')]) assert.throws(() => validateSupabaseConfig('https://project.supabase.co', key), /Privileged/);
   assert.throws(() => validateSupabaseConfig('https://project.supabase.co/rest/v1/', 'sb_publishable_test'));
   assert.throws(() => validateSupabaseConfig('ftp://localhost', 'sb_publishable_test'));
+});
+
+test('live smoke refuses to register users or call inference without explicit approval', () => {
+  const result = spawnSync(process.execPath, [new URL('../scripts/smoke-nutrition.mjs', import.meta.url).pathname], {
+    env: { ...process.env, NUTRITION_SMOKE_APPROVED: 'false' }, encoding: 'utf8',
+  });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /Explicit live-test spending approval required/);
+  assert.equal(result.stdout.includes('Guest authentication'), false);
 });
 
 function secureStore() {
