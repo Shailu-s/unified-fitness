@@ -19,6 +19,7 @@ and scope below supersede it** (see "Deviations from the PDF").
 | Platforms | **Both iOS and Android simultaneously.** Founder decision, made against a recommendation to ship Android-first. |
 | Live GPS | **In V1.** Founder decision — "Strava-grade" is core to the pitch; imported-only cardio is not acceptable. |
 | Food data | **LLM estimates everything**, no curated seed DB. Founder decision. Caching is mandatory (see below). |
+| Next complete phase | **Text + photo nutrition estimates together, before real rings/GPS.** Founder priority. Photo uncertainty remains explicit; no promise of precise calories from images. |
 | Goal | Real business, not a portfolio piece. |
 
 ## Deviations from the PDF (deliberate)
@@ -28,7 +29,8 @@ and scope below supersede it** (see "Deviations from the PDF").
 - Hevy-style deep strength logging is **out**. Light logging replaces it.
 - The dashboard/unification is the product; logging pillars serve it.
 - Photo-based calorie estimation is treated as unproven and low-trust — text/voice
-  parsing is the primary path.
+  parsing is the primary path. Founder now requires working photo estimation in
+  the first complete nutrition phase alongside text, not deferred until after rings.
 
 ## Working relationship
 

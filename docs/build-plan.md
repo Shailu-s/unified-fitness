@@ -10,7 +10,44 @@ Status: TODO / BUILDING / VERIFY / DONE / BLOCKED. DONE requires recorded verifi
 
 Founder feedback loop: after every slice, run checks, launch a runnable version, and give Shailendra a short manual checklist. Wait for his feedback before starting the next slice; fix reported blockers first. First test device: founder's iPhone. Record device/build and reported results, never assume a pass. Preview setup: install SDK-57-compatible Expo Go, sign in to the same Expo account in CLI and phone, use the same Wi-Fi, and scan the dev server QR. First checkpoint: onboarding → save typed meal → correct manual nutrition → close/reopen project.
 
-## Sequence and acceptance gates
+## Approved next phase: complete text + photo nutrition
+
+Founder approves nutrition before rings and explicitly includes photo estimation in this phase. Native health/GPS work remains later; input uncertainty and correction requirements are unchanged. Backend/provider choices below are recommendations, not yet approved.
+
+### Nutrition phase implementation slices
+
+| Slice | Deliverable | Acceptance gate |
+|---|---|---|
+| N1 | Shared nutrition data/queue/cache foundation | Safely migrate existing logs; include calories/protein/carbs/fat/fibre, input type, estimate state, assumptions, revisions. Text and local photo files persist before network work; pending jobs survive restart. |
+| N2 | Backend + typed estimates | Authenticated/rate-limited endpoint, validated structured estimates, versioned local/shared cache, durable jobs/retries, idempotency and spending guard. Repeated normalized phrases avoid a new nutrition call; no curated seed DB. |
+| N3 | Photo capture/gallery + vision estimates | SDK-compatible photo input, resizing/metadata removal, private uploads, food/portion extraction, shared nutrition pipeline, editable visible assumptions. New photos may require a vision call even when nutrition is cached. Raw photos never enter the shared meal cache. |
+| N4 | Corrections, privacy, reliability and quality | Portion/food correction UX; late results cannot overwrite edits. Test offline capture, kill/reopen, denied camera access, model failure/timeouts, duplicate jobs, invalid outputs, image-size limits, and both OSes. Evaluate Indian mixed meals against known-portion/reference cases; do not claim validated photo accuracy without evidence. Update history/export for new nutrition data and document photo retention/export policy. |
+
+Complete N1–N4 and founder checkpoints before moving to real rings/GPS. Each slice remains a meaningful commit/test handoff rather than one giant feature commit. Voice later feeds the same nutrition pipeline.
+
+### Proposed backend (awaiting approval)
+
+Recommend Supabase: Postgres for shared estimates/jobs; TypeScript/Deno Edge Functions for bounded model orchestration; private Storage with ownership/RLS policies for photos; Auth for access control (guest sessions can avoid a mandatory signup screen). SQLite remains the local source of truth; server auth/upload/model calls never gate saving a local log. Use a durable Postgres queue and idempotent workers, not an in-memory queue or a long request assumed to survive indefinitely. Supabase Edge runtime limits require bounded work; resizing happens on mobile, model inference uses an external API.
+
+Recommend a supported multimodal Flash-class API behind an adapter, with exact provider/model pinned only after a small text/image Indian-food evaluation and pricing/privacy review. Provider API key and service credentials remain server-only. Require explicit API-budget approval before real calls. Gemini is a candidate with documented image/JSON capabilities; free-tier content may be used to improve products, so personal photos need an appropriate paid/privacy-approved tier. Supabase free tier suits prototypes but can pause after inactivity; local logs remain usable and uncached estimates wait safely.
+
+### Updated later-feature order
+
+Recommendation: automatic nutrition estimates first. Existing meal persistence/edit/history UI can be reused and tested in Expo Go; there is no estimator backend/cache yet, so this is a medium-complexity feature, not a single model call. Reliable all-day rings on both platforms are harder: native health adapters, permissions, available data sources, deduplication, and cross-platform metric definitions must all work. Expo's foreground pedometer is a smaller/easier demo, not equivalent to full daily rings; background updates are unavailable and historical queries are iOS-only.
+
+| Order | Work | Gate before calling it usable |
+|---|---|---|
+| 1 | Complete text + photo nutrition (N1–N4; 3.1/3.2/3.4) | Both inputs usable, durable and correctable; server/local caching, bounded costs, private photo handling, offline/failure recovery, and founder test gates complete. |
+| 2 | Native health/GPS feasibility checkpoint (2.1 + spikes) | Resolve supported Mac/SDK route without blind installs. Prove health read permissions and locked-screen GPS on iPhone; obtain real Android/OEM test access early. Do not let nutrition/UI work defer this until launch. |
+| 3 | Real steps/rings (2.3/4.1) | HealthKit/Health Connect behind one interface; real day totals, denial/unavailable states, no fake zero readings or double counting. Approve shared ring metrics before replacing demo UI. Proposed steps/active calories/exercise minutes; stand hours are not assumed equivalent. |
+| 4 | Complete live GPS walks/runs (2.2) | Start/pause/resume/finish, route/distance/time persisted continuously, interruption recovery; actual locked-screen/background and battery/OEM tests on both OSes. |
+| 5 | Voice logging (3.3) | Speech → reviewed transcript → same nutrition pipeline/cache, not a second estimator. Define supported languages and offline/failure fallback; preserve captured input and keep typing available. |
+
+The text + photo nutrition phase still requires founder approval of backend/model provider and a hard API spending cap. Secrets stay server-side; endpoint needs validation and abuse/rate limits. Repeated normalized meal phrases must reuse shared estimates; personal corrections stay separate from global cache. Local storage remains source of truth. Nutrition phase scope is approved; backend setup, external services and billable model calls still await explicit approval.
+
+Founder explicitly prioritizes complete text + photo nutrition before the remaining dashboard tracking pillars. Photo accuracy limits and the later native GPS feasibility risk remain acknowledged. Each usable slice gets automated checks, one meaningful commit, founder testing, then the next slice.
+
+## Scope and acceptance gates (IDs are stable, not execution order)
 
 | ID | Slice | Status | Acceptance gate |
 |---|---|---|---|
@@ -22,6 +59,7 @@ Founder feedback loop: after every slice, run checks, launch a runnable version,
 | 3.1 | Async text estimates + local/shared cache | TODO | Raw meal saves immediately; uncached offline log waits durably. Extend nutrition to include carbs/fat alongside calories/protein/fibre. Normalize phrasing with explicit portions and versioned cache keys; shared repeated meals avoid new model calls. |
 | 3.2 | Estimate correction and failure recovery | TODO | Validate model output, retry failed jobs, label estimates; manual edits win over late results. Personal corrections never silently poison shared cache. |
 | 3.3 | Voice-to-text logging | TODO | Same durable text path; unavailable voice service offers typing, never blocks logging. |
+| 3.4 | Photo nutrition estimation (first nutrition phase) | TODO | Durable capture/private upload, explicitly rough estimates with portion/context correction; evaluate Indian mixed-meal quality and cost before completing nutrition phase. |
 | 4.1 | Unified real dashboard | TODO | Food totals, real activity, and recorded walks appear together; deduplicate imported/locally recorded workouts. Handle missing permissions/data honestly. |
 | 4.2 | Light gym logging | TODO | Save basic exercises/sets/reps/weight offline; resume interrupted log. No volume math or muscle maps. |
 | 5.1 | 14-day pilot with 5–10 target users | TODO | Record activation, repeat use, logging friction, reliability, and support feedback; collect consent, avoid sensitive analytics payloads. |
@@ -72,7 +110,7 @@ Implementation checklist (checked means implemented/automated checks passed, not
 5. With the project already loaded, disable network and repeat browsing/export to a local Files folder. This is not a full Expo Go offline cold-start test.
 6. Report each pass/fail and any confusing UI. Do not start the next slice before feedback.
 
-## Current slice: 2.1 (native build setup)
+## Native build preparation: 2.1 (paused behind nutrition phase)
 
 - [x] Founder has no paid Apple Developer membership; initial route is local Xcode/Personal Team, not an unapproved subscription.
 - [x] SDK-compatible dev client and Android light-mode helper pinned to releases older than seven days.
@@ -88,6 +126,8 @@ Implementation checklist (checked means implemented/automated checks passed, not
 No native compile/install result claimed. Generated projects and JS bundles are not device builds. GPS follows after a native baseline is usable; health adapters remain a separate slice.
 
 ## Verification log
+
+- Founder reports the current basic Expo Go testing works. Treat this as an aggregate preview-checkpoint pass, not proof of every optional export case, Android behavior, or standalone offline cold start. No native GPS/health data is connected yet.
 
 - 2026-10-05: repository audited. Existing UI only; profile/meals in React state, activity/photo results mocked, text/voice placeholders. No existing roadmap or tests. Dependency installation completed using existing yarn lockfile.
 - 2026-10-05: slice 1.1 implemented. `yarn typecheck` passed; `yarn test` passed all 10 real-SQLite tests; iOS and Android `expo export` succeeded; `git diff --check` passed. Tested with Node 25.6.1. These are JS/Hermes bundles, not signed native binaries or runtime validation.
@@ -138,9 +178,9 @@ On both iOS and Android, with an installed compatible client/build:
 
 ## Next action
 
-Founder retests History: reload, open History, swipe down from top (or tap Done). Native swipe is not yet signed off. Export remains a backup/data-ownership requirement, not an expanded daily feature.
+Founder approves text + photo nutrition as the first complete feature phase, before rings/GPS, and asks to discuss backend stack first. Recommend Supabase plus a multimodal model API; confirm backend/provider choice, access and a hard API budget before starting backend integration or paid calls.
 
-Prepare slice 2.1 while founder installs full compatible Xcode and opens it once for platform/first-launch setup. Once ready, connect/trust the iPhone, enable Developer Mode if required, and configure the founder's Apple Account/Personal Team in Xcode. Build and install the app, then proceed to live GPS sessions (2.2). Android build/install remains a separate gate; do not mark either platform done from bundle/prebuild checks alone.
+Native installations remain paused until the researched compatible Mac/SDK route is approved. Keep health/GPS feasibility tests early and explicit; both native install gates remain incomplete. Export is a backup/data-ownership requirement, not an expanded daily feature.
 
 ## Blockers / decisions needed later
 
