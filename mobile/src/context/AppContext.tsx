@@ -7,13 +7,25 @@ import { localDateKey, sumNutrition } from '../lib/meals';
 import { computeTargets } from '../lib/targets';
 import { nutritionBackendConfig, photoEstimatesEnabled, requestNutrition } from '../lib/supabaseNutrition';
 import { processNutritionJobs } from '../lib/nutritionWorker';
-import type { Activity, ExportData, MealInput, Profile, SavedMeal, Targets } from '../types';
+import type { Activity, ExportData, MealInput, Profile, SavedMeal, Targets, VoiceJob } from '../types';
+import { voiceEnabled, requestVoice } from '../lib/supabaseVoice';
+import { processVoiceJobs } from '../lib/voiceWorker';
+import { removeVoiceAudio } from '../lib/voiceFiles';
 
 interface AppState {
   profile: Profile | null;
   targets: Targets;
   meals: SavedMeal[];
   photoDrafts: SavedMeal[];
+  voiceJobs: VoiceJob[];
+  voicesEnabled: boolean;
+  getVoiceJob: (id: string) => VoiceJob;
+  startVoiceRecording: (uri: string) => VoiceJob;
+  queueVoiceRecording: (id: string, durationMs: number) => void;
+  interruptVoiceRecording: (id: string) => void;
+  reviewVoiceTranscript: (id: string, text: string) => SavedMeal;
+  retryVoiceJob: (id: string) => void;
+  discardVoiceJob: (id: string) => void;
   addPhotoDraft: (input: MealInput) => SavedMeal;
   savePhotoDraft: (id: string) => SavedMeal;
   discardPhotoDraft: (id: string) => void;
@@ -43,6 +55,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [meals, setMeals] = useState<SavedMeal[]>([]);
   const [photoDrafts, setPhotoDrafts] = useState<SavedMeal[]>([]);
+  const [voiceJobs, setVoiceJobs] = useState<VoiceJob[]>([]);
+  const voicesEnabled = voiceEnabled();
+  const processingVoice = useRef(false);
   const [ready, setReady] = useState(false);
   const [storageError, setStorageError] = useState<string | null>(null);
   const photosEnabled = photoEstimatesEnabled();
@@ -65,6 +80,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       day.current = today;
       setMeals(saved);
       setPhotoDrafts(requireRepository().getPhotoDrafts());
+      setVoiceJobs(requireRepository().getVoiceJobs());
     }
   }, [requireRepository]);
 
@@ -82,6 +98,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setProfile(savedProfile);
       setMeals(savedMeals);
       setPhotoDrafts(store.getPhotoDrafts());
+      setVoiceJobs(store.getVoiceJobs());
       setReady(true);
     } catch {
       setStorageError('Could not open local data. Your data has not been reset. Retry, or check device storage and app version.');
@@ -98,6 +115,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }).finally(() => { processing.current = false; });
   }, [estimatesEnabled, photosEnabled, refreshMeals]);
 
+  const cleanupVoice = useCallback(() => {
+    for (const job of repository.current?.getVoiceCleanup() ?? []) {
+      try { if (job.audioUri) removeVoiceAudio(job.audioUri); repository.current?.clearVoiceAudio(job.id); } catch {}
+    }
+  }, []);
+  const kickVoice = useCallback(() => {
+    if (!repository.current || !active.current) return;
+    cleanupVoice();
+    if (!voicesEnabled || !estimatesEnabled || processingVoice.current) return;
+    processingVoice.current = true;
+    void processVoiceJobs(repository.current, requestVoice, () => {
+      if (alive.current) refreshMeals(true);
+    }, () => alive.current && active.current).catch(() => {
+      if (alive.current) setStorageError('Could not process voice drafts. Recordings remain saved.');
+    }).finally(() => { processingVoice.current = false; cleanupVoice(); if (alive.current) refreshMeals(true); });
+  }, [voicesEnabled, estimatesEnabled, cleanupVoice, refreshMeals]);
+
   useEffect(() => {
     alive.current = true;
     retryStorage();
@@ -108,7 +142,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!ready) return;
     active.current = NativeAppState.currentState === 'active';
     kickEstimates();
-    const workerTimer = setInterval(kickEstimates, 15000);
+    kickVoice();
+    const workerTimer = setInterval(() => { kickEstimates(); kickVoice(); }, 15000);
     const refresh = (force: boolean) => {
       try { refreshMeals(force); }
       catch { setStorageError('Could not read your logs. Check device storage and retry.'); }
@@ -125,12 +160,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (state === 'active') {
         refresh(true);
         kickEstimates();
+        kickVoice();
         clearTimeout(timer);
         scheduleMidnight();
       }
     });
     return () => { clearTimeout(timer); clearInterval(workerTimer); subscription.remove(); };
-  }, [ready, refreshMeals, kickEstimates]);
+  }, [ready, refreshMeals, kickEstimates, kickVoice]);
 
   // Falls back to the mock profile only so the value is never null; Main renders after onboarding.
   const targets = useMemo(() => computeTargets(profile ?? mockProfile), [profile]);
@@ -174,6 +210,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     requireRepository().discardPhotoDraft(id);
     refreshMeals(true);
   }, [requireRepository, refreshMeals]);
+  const getVoiceJob = useCallback((id: string) => requireRepository().getVoiceJob(id), [requireRepository]);
+  const startVoiceRecording = useCallback((uri: string) => { const job = requireRepository().startVoiceRecording(uri); refreshMeals(true); return job; }, [requireRepository, refreshMeals]);
+  const queueVoiceRecording = useCallback((id: string, durationMs: number) => { requireRepository().queueVoiceRecording(id, durationMs); refreshMeals(true); kickVoice(); }, [requireRepository, refreshMeals, kickVoice]);
+  const interruptVoiceRecording = useCallback((id: string) => { requireRepository().interruptVoiceRecording(id); refreshMeals(true); }, [requireRepository, refreshMeals]);
+  const reviewVoiceTranscript = useCallback((id: string, text: string) => { const meal = requireRepository().reviewVoiceTranscript(id, text); cleanupVoice(); refreshMeals(true); kickEstimates(); return meal; }, [requireRepository, cleanupVoice, refreshMeals, kickEstimates]);
+  const retryVoiceJob = useCallback((id: string) => { requireRepository().retryVoiceJob(id); refreshMeals(true); kickVoice(); }, [requireRepository, refreshMeals, kickVoice]);
+  const discardVoiceJob = useCallback((id: string) => { requireRepository().discardVoiceJob(id); cleanupVoice(); refreshMeals(true); }, [requireRepository, cleanupVoice, refreshMeals]);
   const getMeal = useCallback((id: string) => requireRepository().getMeal(id), [requireRepository]);
   const retryEstimate = useCallback((id: string) => { requireRepository().retryNutritionJob(id); refreshMeals(true); kickEstimates(); }, [requireRepository, refreshMeals, kickEstimates]);
   const removePhoto = useCallback((id: string) => { const meal = requireRepository().removePhoto(id); refreshMeals(true); return meal; }, [requireRepository, refreshMeals]);
@@ -183,6 +226,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const value: AppState = {
     profile, targets, meals, photoDrafts, addPhotoDraft, savePhotoDraft, discardPhotoDraft, eaten, activity: mockActivity, ready, storageError, retryStorage,
+    voiceJobs, voicesEnabled, getVoiceJob, startVoiceRecording, queueVoiceRecording, interruptVoiceRecording, reviewVoiceTranscript, retryVoiceJob, discardVoiceJob,
     completeOnboarding, addMeal, updateMeal, getMealsForDay, getMealDays, getExportData, estimatesEnabled, getMeal, retryEstimate, removePhoto, photosEnabled,
   };
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

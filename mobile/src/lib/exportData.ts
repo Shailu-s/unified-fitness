@@ -14,6 +14,7 @@ export function makeExportDocument(data: ExportData, date = new Date()): string 
     profile: data.profile,
     meals: data.meals,
     ...(data.drafts?.length ? { drafts: data.drafts } : {}),
+    ...(data.voice?.length ? { voice: data.voice } : {}),
   }, null, 2);
 }
 

@@ -82,10 +82,27 @@ export interface NutritionJob {
   updatedAt: string;
 }
 
+export interface VoiceJob {
+  id: string;
+  audioUri: string | null;
+  durationMs: number | null;
+  state: 'recording' | 'queued' | 'running' | 'ready' | 'completed' | 'failed' | 'discarded';
+  transcript: string | null;
+  mealId: string | null;
+  attempts: number;
+  nextAttemptAt: string;
+  leaseToken: string | null;
+  leaseUntil: string | null;
+  errorCode: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ExportData {
   profile: Profile | null;
   meals: SavedMeal[];
   drafts?: SavedMeal[];
+  voice?: VoiceJob[];
 }
 
 // A meal before it has an id and a time, e.g. a "usual" or a photo result.

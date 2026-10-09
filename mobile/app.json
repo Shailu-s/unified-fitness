@@ -8,7 +8,12 @@
     "plugins": [["expo-image-picker", {
       "cameraPermission": "Allow Unified Fitness to photograph your meals.",
       "photosPermission": "Allow Unified Fitness to choose a meal photo.",
-      "microphonePermission": false
+      "microphonePermission": "Allow Unified Fitness to record a spoken meal."
+    }], ["expo-audio", {
+      "microphonePermission": "Allow Unified Fitness to record a spoken meal.",
+      "recordAudioAndroid": true,
+      "enableBackgroundRecording": false,
+      "enableBackgroundPlayback": false
     }]],
     "ios": {
       "supportsTablet": false,

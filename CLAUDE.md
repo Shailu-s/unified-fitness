@@ -97,7 +97,7 @@ data. iPhone Expo Go reopen persistence passed per founder; native history/shari
 and full offline cold-start verification are pending. GPS, health integration,
 sync and billing are not built. Live text nutrition is now enabled for founder
 testing. Nutrition foundation now uses
-additive SQLite schema v3: durable review-before-save photo drafts excluded from
+additive SQLite schema v4: durable voice sessions/jobs and review-before-save photo drafts excluded from
 daily totals/history until explicit Save, plus full macro fields, text/photo metadata, revisions,
 durable jobs with leases/retries, local cache and late-result/correction protection.
 Supabase backend schema/private bucket and authenticated nutrition-estimate v1
@@ -118,7 +118,16 @@ Founder photo preparation failure reproduced at native hashing boundary and fixe
 by passing Uint8Array rather than ArrayBuffer. Founder now requests minimal photo UI:
 photo with bottom translucent macro overlay; short Edit/Remove/Save actions; no visible
 quantity/portion/assumption prompts. Camera icon offers native Camera/Gallery choices.
-86 automated tests/typechecks/bundles pass; upload/UI phone retest pending. Expo compatibility checker recommends
+Online voice is now implemented on feat/voice-nutrition: type left/camera centre/voice right,
+30-second foreground document recording → private editable transcript → same text
+nutrition draft/cache → Save. Founder approved pinned gpt-4o-mini-transcribe-2025-12-15
+and private audio inside the existing $1 cap; isolated voice-transcribe-preview is
+ACTIVE with JWT verification. Voice reserves $0.04 per uncached transcription from
+the same ledger, never a new budget. Two synthetic live runs/cache/cleanup pass but
+transcripts had word errors; real English/Hindi/mixed and native mic remain unverified.
+October latest verified ledger is $1 limit/$0.15 reserved, not invoice spend.
+107 automated tests/typechecks/bundles, isolated Postgres and config introspection pass;
+upload/UI/voice phone retest pending. Expo compatibility checker recommends
 October 6 patches retained pending seven-day age/review. Native photo QA, actual
 food-image inference and reference-meal evaluation remain required.
 Never dump or commit dotenv values; mobile configuration may contain only public

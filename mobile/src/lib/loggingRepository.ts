@@ -1,4 +1,5 @@
-import type { ExportData, MealInput, NutritionEstimate, NutritionJob, Profile, SavedMeal } from '../types';
+import type { ExportData, MealInput, NutritionEstimate, NutritionJob, Profile, SavedMeal, VoiceJob } from '../types';
+import { validateTranscript } from './voice.ts';
 import { localDateKey, validateMealInput } from './meals.ts';
 import { nutritionCacheKey, validateEstimate } from './nutrition.ts';
 
@@ -24,6 +25,9 @@ const columns = `m.id, m.name, m.portion, m.kcal, m.protein, m.fibre, m.carbs, m
   e.payload AS estimateJson, j.state AS jobState, j.error_code AS estimateError`;
 const mealFrom = `FROM meals m LEFT JOIN meal_estimates e ON e.meal_id = m.id AND e.revision = m.revision AND m.nutrition_status = 'pending'
   LEFT JOIN nutrition_jobs j ON j.meal_id = m.id AND j.revision = m.revision`;
+const voiceColumns = `id, audio_uri AS audioUri, duration_ms AS durationMs, state, transcript, meal_id AS mealId, attempts,
+  next_attempt_at AS nextAttemptAt, lease_token AS leaseToken, lease_until AS leaseUntil, error_code AS errorCode,
+  created_at AS createdAt, updated_at AS updatedAt`;
 const jobColumns = `id, meal_id AS mealId, revision, input_json AS inputJson, cache_key AS cacheKey, state, attempts,
   next_attempt_at AS nextAttemptAt, lease_until AS leaseUntil, lease_token AS leaseToken,
   error_code AS errorCode, created_at AS createdAt, updated_at AS updatedAt`;
@@ -56,7 +60,7 @@ export class LoggingRepository {
 
   initialize() {
     const version = this.db.getFirstSync<{ user_version: number }>('PRAGMA user_version')?.user_version ?? 0;
-    if (version > 3) throw new Error('Local data uses a newer app version. Update the app to open it.');
+    if (version > 4) throw new Error('Local data uses a newer app version. Update the app to open it.');
     this.db.execSync('PRAGMA journal_mode = WAL; PRAGMA synchronous = FULL; PRAGMA foreign_keys = ON;');
     if (version === 0) {
       this.db.withTransactionSync(() => this.db.execSync(`
@@ -115,6 +119,19 @@ export class LoggingRepository {
         PRAGMA user_version = 3;
       `));
     }
+    if (version < 4) {
+      this.db.withTransactionSync(() => this.db.execSync(`
+        CREATE TABLE IF NOT EXISTS voice_jobs (
+          id TEXT PRIMARY KEY NOT NULL, audio_uri TEXT, duration_ms REAL,
+          state TEXT NOT NULL CHECK (state IN ('recording','queued','running','ready','completed','failed','discarded')),
+          transcript TEXT, meal_id TEXT UNIQUE REFERENCES meals(id), attempts INTEGER NOT NULL DEFAULT 0,
+          next_attempt_at TEXT NOT NULL, lease_token TEXT, lease_until TEXT, error_code TEXT,
+          created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+        );
+        PRAGMA user_version = 4;
+      `));
+    }
+    this.db.runSync("UPDATE voice_jobs SET state = 'failed', error_code = 'interrupted', updated_at = ? WHERE state = 'recording'", new Date().toISOString());
   }
 
   private newId() {
@@ -183,8 +200,9 @@ export class LoggingRepository {
     let data: ExportData = { profile: null, meals: [] };
     this.db.withTransactionSync(() => {
       const drafts = this.getPhotoDrafts();
+      const voice = this.getVoiceJobs();
       data = { profile: this.getProfile(), meals: this.db.getAllSync<MealRecord>(`SELECT ${columns} ${mealFrom} WHERE m.log_state = 'saved' ORDER BY m.logged_date, m.created_at, m.rowid`).map(toMeal),
-        ...(drafts.length ? { drafts } : {}) };
+        ...(drafts.length ? { drafts } : {}), ...(voice.length ? { voice } : {}) };
     });
     return data;
   }
@@ -213,6 +231,7 @@ export class LoggingRepository {
       if (meal.logState !== 'draft') throw new Error('Only an unsaved draft can be discarded.');
       this.db.runSync("UPDATE meals SET log_state = 'discarded', photo_uri = NULL, revision = revision + 1, updated_at = ? WHERE id = ?", date.toISOString(), id);
       this.db.runSync("UPDATE nutrition_jobs SET state = 'cancelled', lease_token = NULL, lease_until = NULL, updated_at = ? WHERE meal_id = ? AND state IN ('queued', 'running', 'failed')", date.toISOString(), id);
+      this.db.runSync("UPDATE voice_jobs SET state = 'discarded' WHERE meal_id = ?", id);
     });
   }
 
@@ -221,20 +240,22 @@ export class LoggingRepository {
   }
 
   private insertMeal(input: MealInput, date: Date, logState: 'draft' | 'saved'): SavedMeal {
+    let saved: SavedMeal;
+    this.db.withTransactionSync(() => { saved = this.writeMeal(input, date, logState); });
+    return saved!;
+  }
+
+  private writeMeal(input: MealInput, date: Date, logState: 'draft' | 'saved'): SavedMeal {
     const meal = validateMealInput(input);
     const id = this.newId();
     const timestamp = date.toISOString();
-    let saved: SavedMeal;
-    this.db.withTransactionSync(() => {
-      this.db.runSync(
-        'INSERT INTO meals (id, name, portion, kcal, protein, fibre, carbs, fat, nutrition_status, logged_date, created_at, updated_at, input_type, photo_uri, log_state) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        id, meal.name, meal.portion, meal.kcal, meal.protein, meal.fibre, meal.carbs, meal.fat,
-        meal.kcal === null ? 'pending' : 'manual', localDateKey(date), timestamp, timestamp, meal.inputType, meal.photoUri, logState,
-      );
-      this.prepareNutrition(id, 0, meal, timestamp);
-      saved = this.getMeal(id);
-    });
-    return saved!;
+    this.db.runSync(
+      'INSERT INTO meals (id, name, portion, kcal, protein, fibre, carbs, fat, nutrition_status, logged_date, created_at, updated_at, input_type, photo_uri, log_state) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      id, meal.name, meal.portion, meal.kcal, meal.protein, meal.fibre, meal.carbs, meal.fat,
+      meal.kcal === null ? 'pending' : 'manual', localDateKey(date), timestamp, timestamp, meal.inputType, meal.photoUri, logState,
+    );
+    this.prepareNutrition(id, 0, meal, timestamp);
+    return this.getMeal(id);
   }
 
   updateMeal(id: string, input: MealInput, date = new Date()): SavedMeal {
@@ -272,6 +293,104 @@ export class LoggingRepository {
       this.db.runSync("UPDATE nutrition_jobs SET state = 'cancelled', lease_token = NULL, lease_until = NULL WHERE meal_id = ? AND state IN ('queued','running','failed')", id);
     });
     return this.getMeal(id);
+  }
+
+  getVoiceJobs(): VoiceJob[] {
+    return this.db.getAllSync<VoiceJob>(`SELECT ${voiceColumns} FROM voice_jobs WHERE state <> 'discarded' ORDER BY created_at, rowid`);
+  }
+
+  getVoiceJob(id: string): VoiceJob {
+    const job = this.db.getFirstSync<VoiceJob>(`SELECT ${voiceColumns} FROM voice_jobs WHERE id = ?`, id);
+    if (!job) throw new Error('Recording not found.');
+    return job;
+  }
+
+  startVoiceRecording(uri: string, date = new Date()): VoiceJob {
+    if (!uri.startsWith('file:///') || !uri.endsWith('.m4a') || uri.includes('/../')) throw new Error('Use a local M4A recording.');
+    const id = this.newId();
+    const time = date.toISOString();
+    this.db.runSync("INSERT INTO voice_jobs (id, audio_uri, state, next_attempt_at, created_at, updated_at) VALUES (?, ?, 'recording', ?, ?, ?)", id, uri, time, time, time);
+    return this.getVoiceJob(id);
+  }
+
+  queueVoiceRecording(id: string, durationMs: number, date = new Date()) {
+    if (!Number.isFinite(durationMs) || durationMs < 250 || durationMs > 32000) throw new Error('Record for up to 30 seconds.');
+    const job = this.getVoiceJob(id);
+    if (job.state !== 'recording' || !job.audioUri) throw new Error('Recording is not active.');
+    this.db.runSync("UPDATE voice_jobs SET state = 'queued', duration_ms = ?, updated_at = ? WHERE id = ? AND state = 'recording'", durationMs, date.toISOString(), id);
+  }
+
+  interruptVoiceRecording(id: string) {
+    this.db.runSync("UPDATE voice_jobs SET state = 'failed', error_code = 'interrupted', updated_at = ? WHERE id = ? AND state = 'recording'", new Date().toISOString(), id);
+  }
+
+  claimVoiceJob(date = new Date()): VoiceJob | null {
+    let claimed: VoiceJob | null = null;
+    const time = date.toISOString();
+    this.db.withTransactionSync(() => {
+      const job = this.db.getFirstSync<VoiceJob>(`SELECT ${voiceColumns} FROM voice_jobs WHERE
+        (state = 'queued' AND next_attempt_at <= ?) OR (state = 'running' AND lease_until <= ?) ORDER BY created_at, rowid LIMIT 1`, time, time);
+      if (!job) return;
+      const token = this.newId();
+      this.db.runSync("UPDATE voice_jobs SET state = 'running', attempts = attempts + 1, lease_token = ?, lease_until = ?, error_code = NULL, updated_at = ? WHERE id = ?", token, new Date(date.getTime() + 120000).toISOString(), time, job.id);
+      claimed = this.getVoiceJob(job.id);
+    });
+    return claimed;
+  }
+
+  completeVoiceJob(id: string, lease: string | null, text: unknown, date = new Date()): boolean {
+    const transcript = validateTranscript(text);
+    const job = this.getVoiceJob(id);
+    if (job.state !== 'running' || job.leaseToken !== lease) return false;
+    this.db.runSync("UPDATE voice_jobs SET state = 'ready', transcript = ?, lease_token = NULL, lease_until = NULL, error_code = NULL, updated_at = ? WHERE id = ?", transcript, date.toISOString(), id);
+    return true;
+  }
+
+  failVoiceJob(id: string, lease: string | null, code: string, date = new Date()): boolean {
+    if (!['network','invalid_result','backend_not_configured','budget_exceeded','audio_invalid'].includes(code)) throw new Error('Invalid voice error.');
+    const job = this.getVoiceJob(id);
+    if (job.state !== 'running' || job.leaseToken !== lease) return false;
+    const retry = code === 'network' && job.attempts < 3;
+    this.db.runSync('UPDATE voice_jobs SET state = ?, next_attempt_at = ?, lease_token = NULL, lease_until = NULL, error_code = ?, updated_at = ? WHERE id = ?',
+      retry ? 'queued' : 'failed', new Date(date.getTime() + 30000 * 2 ** Math.min(job.attempts - 1, 2)).toISOString(), code, date.toISOString(), id);
+    return true;
+  }
+
+  deferVoiceJob(id: string, lease: string | null, date = new Date()) {
+    this.db.runSync("UPDATE voice_jobs SET state = 'queued', lease_token = NULL, lease_until = NULL, next_attempt_at = ?, updated_at = ? WHERE id = ? AND state = 'running' AND lease_token = ?",
+      new Date(date.getTime() + 5000).toISOString(), date.toISOString(), id, lease);
+  }
+
+  retryVoiceJob(id: string, date = new Date()) {
+    this.db.runSync("UPDATE voice_jobs SET state = 'queued', attempts = 0, next_attempt_at = ?, error_code = NULL, updated_at = ? WHERE id = ? AND state = 'failed' AND audio_uri IS NOT NULL AND duration_ms IS NOT NULL", date.toISOString(), date.toISOString(), id);
+  }
+
+  reviewVoiceTranscript(id: string, text: string, date = new Date()): SavedMeal {
+    const transcript = validateTranscript(text);
+    let meal: SavedMeal;
+    this.db.withTransactionSync(() => {
+      const job = this.getVoiceJob(id);
+      if (job.state === 'discarded') throw new Error('This recording was discarded.');
+      if (job.mealId) { meal = this.getMeal(job.mealId); return; }
+      if (job.state === 'recording') throw new Error('Stop recording first.');
+      meal = this.writeMeal({ name: transcript, portion: '', kcal: null, protein: null, fibre: null, inputType: 'text' }, new Date(job.createdAt), 'draft');
+      this.db.runSync("UPDATE voice_jobs SET state = 'completed', meal_id = ?, lease_token = NULL, lease_until = NULL, updated_at = ? WHERE id = ?", meal.id, date.toISOString(), id);
+    });
+    return meal!;
+  }
+
+  discardVoiceJob(id: string, date = new Date()) {
+    const job = this.getVoiceJob(id);
+    if (job.mealId) throw new Error('Use the meal screen for this recording.');
+    this.db.runSync("UPDATE voice_jobs SET state = 'discarded', lease_token = NULL, lease_until = NULL, updated_at = ? WHERE id = ?", date.toISOString(), id);
+  }
+
+  clearVoiceAudio(id: string) {
+    this.db.runSync('UPDATE voice_jobs SET audio_uri = NULL WHERE id = ? AND state IN (\'ready\',\'completed\',\'discarded\')', id);
+  }
+
+  getVoiceCleanup(): VoiceJob[] {
+    return this.db.getAllSync<VoiceJob>(`SELECT ${voiceColumns} FROM voice_jobs WHERE state IN ('ready','completed','discarded') AND audio_uri IS NOT NULL`);
   }
 
   getNutritionJobs(): NutritionJob[] {

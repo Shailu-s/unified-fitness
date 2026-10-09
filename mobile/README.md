@@ -55,7 +55,7 @@ opens calendar-day records without changing Today. Export creates a versioned JS
 copy of your profile and all saved meals; choose Save to Files for a local copy.
 Exported files contain personal information. History/share-sheet/offline behavior
 still needs device verification. Activity rings remain explicitly labeled demo data.
-Nutrition foundation uses additive schema v2: jobs persist with meals, worker leases
+Nutrition foundation uses additive schema v4: jobs persist with meals, worker leases
 and revisions reject stale results, and generic estimates have a versioned local
 cache. Unknown carbs/fat show a dash. New logs have no custom-macro entry requirement;
 existing values/future estimates can be corrected. A gated foreground Supabase worker
@@ -63,7 +63,10 @@ and bounded OpenAI adapter are implemented. Production defaults remain off;
 founder development preview is enabled under an approved US$1 total test cap.
 Photo capture/gallery, private-upload/vision and in-place result-screen code is
 implemented on the feature branch; production photo flags remain off until review.
-Camera and model quality require physical-device testing. Voice remains unavailable.
+Camera and model quality require physical-device testing. Voice now has foreground
+30-second document-backed recording, private online transcription and editable review
+feeding the existing cached text meal draft. Type left, camera centre, voice right.
+Speech quality/microphone/offline interruption behavior still requires phone testing.
 Seed/test food data is not inserted into local app logs.
 
 Supabase public config is validated; migration and nutrition-estimate v1 are deployed.
@@ -114,6 +117,19 @@ normalized/cross-user shared-cache reuse. Never run automatically in CI. Approve
 test cap is US$1 total; $0.01 is reserved conservatively per model call, not measured
 invoice spend. Only the current UTC month has a positive limit; new months do not
 renew this approval.
+
+Voice preview uses `voice-transcribe-preview` with JWT verification, private
+`meal-voice` storage and backend-only pinned `gpt-4o-mini-transcribe-2025-12-15`.
+Server `VOICE_PREVIEW_API_ENABLED` and development-only `EXPO_PUBLIC_VOICE_ENABLED`
+are enabled for founder testing; production client defaults off. Transcription reserves
+$0.04 conservatively against the existing total $1 cap, not a separate budget.
+`MODEL_API_ENABLED` is also required. Review speech text before macro estimation;
+short synthetic clips had word errors and do not establish Hindi/English accuracy.
+JSON export includes voice state/transcripts/references, not binary media.
+
+Explicitly approved synthetic-audio smoke only:
+`VOICE_SMOKE_APPROVED=true node --env-file=.env.local scripts/smoke-voice.mjs <approved.m4a>`.
+Never run this automatically in CI or use personal recordings without consent.
 
 ## Structure
 

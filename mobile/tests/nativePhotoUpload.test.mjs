@@ -23,7 +23,7 @@ function load(path, dependencies, globals = {}) {
   return module.exports;
 }
 
-function setup() {
+function setup(authOverride = null) {
   const events = [];
   const files = new Map();
   class Directory {
@@ -58,7 +58,7 @@ function setup() {
     'expo-file-system': { Directory, File, Paths: { document: 'file:///documents' } }, 'expo-crypto': crypto, './photos': photos,
   });
   const client = {
-    auth: { getSession: async () => ({ data: { session: { access_token: 'test-token', expires_at: 9999999999, user: { id: 'test-owner' } } } }) },
+    auth: authOverride ?? { getSession: async () => ({ data: { session: { access_token: 'test-token', expires_at: 9999999999, user: { id: 'test-owner' } } } }) },
     storage: { from: () => ({ list: async () => ({ data: [] }), upload: async () => { events.push('upload'); return {}; } }) },
   };
   const transport = load('../src/lib/supabaseNutrition.ts', {
@@ -94,6 +94,20 @@ test('native upload digest covers the sanitized JPEG bytes, identical to the ser
   const photo = await photoFiles.photoUploadData(uri);
   assert.deepEqual(photo.bytes, photos.stripJpegMetadata(jpeg));
   assert.equal(photo.sha256, createHash('sha256').update(photo.bytes).digest('hex'));
+});
+
+test('concurrent voice/nutrition session requests create only one guest identity', async () => {
+  let signedIn = false;
+  let calls = 0;
+  const session = { access_token: 'test-token', expires_at: 9999999999, user: { id: 'test-owner' } };
+  const { transport } = setup({
+    getSession: async () => ({ data: { session: signedIn ? session : null } }),
+    signInAnonymously: async () => { calls++; await Promise.resolve(); signedIn = true; return {}; },
+  });
+  const [first, second] = await Promise.all([transport.nutritionSession(), transport.nutritionSession()]);
+  assert.equal(calls, 1);
+  assert.equal(first.owner, second.owner);
+  assert.equal(first.token, second.token);
 });
 
 test('actual gallery capture works without requesting camera permission', async () => {

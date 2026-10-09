@@ -18,7 +18,7 @@ const errors: Record<string, string> = {
   network: 'Connection failed. Retry when online.',
 };
 
-export function MealResultScreen({ id, onClose }: { id: string; onClose: () => void }) {
+export function MealResultScreen({ id, onClose, embedded = false }: { id: string; onClose: () => void; embedded?: boolean }) {
   const { getMeal, retryEstimate, removePhoto, updateMeal, savePhotoDraft, discardPhotoDraft, photosEnabled } = useApp();
   const meal = getMeal(id);
   const insets = useSafeAreaInsets();
@@ -50,8 +50,8 @@ export function MealResultScreen({ id, onClose }: { id: string; onClose: () => v
       catch { setLocalError('Photo not removed. Try again.'); }
     } },
   ]);
-  return (
-    <Modal visible animationType="slide" onRequestClose={onClose}>
+  const content = (
+    <>
       <View style={[s.root, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 }]}>
         <View style={s.header}>
           <Text style={s.title}>{isDraft ? 'Draft' : 'Meal'}</Text>
@@ -78,8 +78,9 @@ export function MealResultScreen({ id, onClose }: { id: string; onClose: () => v
         </View>}
       </View>
       {editing && <MealEditor meal={meal} onClose={() => setEditing(false)} onSave={(input) => updateMeal(id, input)} />}
-    </Modal>
+    </>
   );
+  return embedded ? content : <Modal visible animationType="slide" onRequestClose={onClose}>{content}</Modal>;
 }
 
 function Macros({ meal, pending, status, loading, light = false }: { meal: SavedMeal; pending: boolean; status: string; loading: boolean; light?: boolean }) {

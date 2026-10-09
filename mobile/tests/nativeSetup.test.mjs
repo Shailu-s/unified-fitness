@@ -25,6 +25,16 @@ test('native config supports light mode without legacy external-storage access',
   }
 });
 
+test('voice adds foreground microphone permission without background services', () => {
+  const audio = config.plugins.find((plugin) => Array.isArray(plugin) && plugin[0] === 'expo-audio')[1];
+  assert.equal(audio.recordAudioAndroid, true);
+  assert.equal(audio.enableBackgroundRecording, false);
+  assert.equal(audio.enableBackgroundPlayback, false);
+  assert.equal(typeof audio.microphonePermission, 'string');
+  assert.equal(typeof config.plugins.find((plugin) => Array.isArray(plugin) && plugin[0] === 'expo-image-picker')[1].microphonePermission, 'string');
+  assert.equal(pkg.dependencies['expo-audio'], '57.0.5');
+});
+
 test('native generation does not delete existing projects or silently upgrade React', () => {
   assert.match(pkg.scripts['native:generate'], /expo prebuild --no-install --no-clean/);
   assert.match(pkg.scripts['native:generate'], /--skip-dependency-update react,react-native/);

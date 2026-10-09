@@ -10,13 +10,14 @@ import { shareExport } from '../lib/shareExport';
 import { num } from '../lib/format';
 import { HistoryScreen } from './HistoryScreen';
 import { MealResultScreen } from './MealResultScreen';
+import { VoiceScreen } from './VoiceScreen';
 import { pickMealPhoto, removeLocalPhoto } from '../lib/photoFiles';
 import * as SecureStore from 'expo-secure-store';
 import type { SavedMeal } from '../types';
 import { colors, eyebrow, fonts, gutter } from '../theme';
 
 export function LogScreen() {
-  const { targets, meals, photoDrafts, eaten, addMeal, addPhotoDraft, updateMeal, getExportData } = useApp();
+  const { targets, meals, photoDrafts, voiceJobs, eaten, addMeal, addPhotoDraft, updateMeal, getExportData } = useApp();
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
 
@@ -27,6 +28,9 @@ export function LogScreen() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [resultId, setResultId] = useState<string | null>(null);
+  const [voiceOpen, setVoiceOpen] = useState(false);
+  const [voiceId, setVoiceId] = useState<string | null>(null);
+  const pendingVoice = voiceJobs.filter((job) => !job.mealId);
   const [preparingPhoto, setPreparingPhoto] = useState(false);
   const photoBusy = useRef(false);
   const exportBusy = useRef(false);
@@ -39,7 +43,7 @@ export function LogScreen() {
     finally { exportBusy.current = false; setExporting(false); }
   };
   const confirmExport = () => Alert.alert('Export',
-    'Profile, meals and drafts as JSON. Photos not included.',
+    'Profile, meals and drafts as JSON. Photos and audio not included.',
     [{ text: 'Cancel', style: 'cancel' }, { text: 'Continue', onPress: () => { void performExport(); } }],
   );
   const openEditor = (meal: SavedMeal | null = null) => {
@@ -96,7 +100,7 @@ export function LogScreen() {
       ]);
     }
   };
-  const soon = (what: string) => Alert.alert('Coming soon', `${what} is not available yet.`);
+  const openVoice = (id: string | null = null) => { setVoiceId(id); setVoiceOpen(true); };
 
   return (
     <View style={s.root}>
@@ -138,9 +142,13 @@ export function LogScreen() {
         {/* Silence, not a divider, separates the day's targets from the day's record. */}
         <View style={[s.meals, { marginTop: height < 720 ? 32 : 66 }]}>
           <ScrollView ref={listRef} showsVerticalScrollIndicator={false} style={s.list}>
-            {photoDrafts.length > 0 && <View style={s.drafts}>
+            {(photoDrafts.length > 0 || pendingVoice.length > 0) && <View style={s.drafts}>
               <Text style={s.mealsHead}>Drafts</Text>
               {photoDrafts.map((draft, index) => <MealRow key={draft.id} meal={draft} last={index === photoDrafts.length - 1} onPress={() => setResultId(draft.id)} />)}
+              {pendingVoice.map((job) => <Pressable key={job.id} onPress={() => openVoice(job.id)} accessibilityRole="button" style={s.voiceDraft}>
+                <MicIcon color={colors.inkMid} />
+                <Text style={s.actionText}>{job.state === 'ready' ? 'Review voice' : job.state === 'failed' ? 'Voice · retry or type' : 'Voice draft'}</Text>
+              </Pressable>)}
             </View>}
             <Text style={s.mealsHead}>Meals</Text>
             {empty ? (
@@ -157,26 +165,26 @@ export function LogScreen() {
       <View style={[s.bottom, { paddingBottom: 10 + insets.bottom }]}>
         <View style={s.satRow}>
           <Pressable
+            onPress={() => openEditor()}
+            accessibilityRole="button"
+            accessibilityLabel="Log food by typing"
+            style={({ pressed }) => [s.sat, pressed && s.satPressed]}
+          >
+            <TypeIcon color={colors.inkMid} />
+          </Pressable>
+
+          <Pressable
             onPress={choosePhoto}
             disabled={preparingPhoto}
             accessibilityRole="button"
             accessibilityLabel="Add photo from camera or gallery"
-            style={({ pressed }) => [s.sat, pressed && s.satPressed]}
-          >
-            {preparingPhoto ? <ActivityIndicator color={colors.inkMid} /> : <CameraIcon color={colors.inkMid} />}
-          </Pressable>
-
-          <Pressable
-            onPress={() => openEditor()}
-            accessibilityRole="button"
-            accessibilityLabel="Log food by typing"
             style={({ pressed }) => [s.shutter, pressed && s.shutterPressed]}
           >
-            <TypeIcon color={colors.paper} />
+            {preparingPhoto ? <ActivityIndicator color={colors.paper} /> : <CameraIcon color={colors.paper} />}
           </Pressable>
 
           <Pressable
-            onPress={() => soon('Voice')}
+            onPress={() => openVoice()}
             accessibilityRole="button"
             accessibilityLabel="Log by voice"
             style={({ pressed }) => [s.sat, pressed && s.satPressed]}
@@ -185,6 +193,7 @@ export function LogScreen() {
           </Pressable>
         </View>
       </View>
+      {voiceOpen && <VoiceScreen id={voiceId} onClose={() => setVoiceOpen(false)} onType={() => { setVoiceOpen(false); openEditor(); }} />}
       {historyOpen && <HistoryScreen onClose={() => setHistoryOpen(false)} />}
       {resultId && !editorOpen && <MealResultScreen id={resultId} onClose={() => setResultId(null)} />}
       {editorOpen && (
@@ -222,6 +231,7 @@ const s = StyleSheet.create({
   mealsHead: { ...eyebrow, letterSpacing: 1.2, marginBottom: 13 },
   list: { flex: 1 },
   drafts: { marginBottom: 20 },
+  voiceDraft: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 },
 
   emptyLine: { fontFamily: fonts.uiSemi, fontSize: 15, letterSpacing: -0.15, color: colors.ink },
   bottom: { paddingTop: 16, paddingHorizontal: 20, backgroundColor: colors.paper, alignItems: 'center' },

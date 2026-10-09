@@ -160,7 +160,7 @@ test('v2 upgrade preserves logged meals and failed draft writes leave no partial
     repository.initialize();
     repository.initialize();
     assert.equal(repository.getMeal(saved.id).logState, 'saved');
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 3);
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 4);
     const failing = repositoryFor(db, { runSync: (sql, ...params) => {
       if (sql.includes('INSERT INTO nutrition_jobs')) throw new Error('Disk full');
       return db.prepare(sql).run(...params);

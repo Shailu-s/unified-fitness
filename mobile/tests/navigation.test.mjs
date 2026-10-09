@@ -56,6 +56,34 @@ test('photo review overlays macros at the bottom of the image without portion or
   assert.match(result, /accessibilityLabel="Remove photo"/);
 });
 
+test('logging controls keep typing left, camera central and voice right', () => {
+  const log = readFileSync(new URL('../src/screens/LogScreen.tsx', import.meta.url), 'utf8');
+  const source = ts.createSourceFile('LogScreen.tsx', log, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  let row;
+  const visit = (node) => {
+    if (ts.isJsxElement(node) && attributes(node.openingElement).get('style')?.expression?.getText() === 's.satRow') row = node;
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  const buttons = row.children.filter(ts.isJsxElement).map((node) => attributes(node.openingElement));
+  assert.deepEqual(buttons.map((props) => props.get('accessibilityLabel')?.text), ['Log food by typing', 'Add photo from camera or gallery', 'Log by voice']);
+  assert.match(buttons[1].get('style').expression.getText(), /s\.shutter/);
+});
+
+test('voice button opens a recording screen with durable document storage and native time limit', () => {
+  const log = readFileSync(new URL('../src/screens/LogScreen.tsx', import.meta.url), 'utf8');
+  const voice = readFileSync(new URL('../src/screens/VoiceScreen.tsx', import.meta.url), 'utf8');
+  assert.match(log, /onPress=\{\(\) => openVoice\(\)\}/);
+  assert.equal(log.includes("soon('Voice')"), false);
+  assert.match(voice, /directory: 'document'/);
+  assert.match(voice, /record\(\{ forDuration: MAX_VOICE_SECONDS \}\)/);
+  assert.ok(voice.indexOf('startVoiceRecording(recorder.uri)') < voice.indexOf('recorder.record('));
+  assert.match(voice, /Meal transcript/);
+  assert.match(voice, /reviewVoiceTranscript\(jobId, text\)/);
+  assert.match(voice, /MealResultScreen[^\n]*embedded/);
+  assert.match(voice, /value !== 'active'/);
+});
+
 test('camera control opens a camera/gallery chooser with no standalone gallery button', () => {
   const log = readFileSync(new URL('../src/screens/LogScreen.tsx', import.meta.url), 'utf8');
   assert.match(log, /onPress=\{choosePhoto\}/);

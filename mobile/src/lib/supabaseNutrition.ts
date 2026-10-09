@@ -9,6 +9,7 @@ import type { NutritionJob } from '../types';
 import { photoUploadData } from './photoFiles';
 
 let client: SupabaseClient | null = null;
+let sessionTask: ReturnType<typeof prepareSession> | null = null;
 
 export function nutritionBackendConfig() {
   return validateSupabaseConfig(process.env.EXPO_PUBLIC_SUPABASE_URL, process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
@@ -17,7 +18,12 @@ export function nutritionBackendConfig() {
 
 export const photoEstimatesEnabled = () => process.env.EXPO_PUBLIC_PHOTO_ESTIMATES_ENABLED === 'true';
 
-export async function requestNutrition(job: NutritionJob) {
+export function nutritionSession() {
+  sessionTask ??= prepareSession().finally(() => { sessionTask = null; });
+  return sessionTask;
+}
+
+async function prepareSession() {
   const config = nutritionBackendConfig();
   if (!config?.enabled) throw new NutritionTransportError('backend_not_configured');
   client ??= createClient(config.url, config.key, {
@@ -30,20 +36,24 @@ export async function requestNutrition(job: NutritionJob) {
     },
   });
   const session = await client.auth.getSession();
-  if (session.error) throw new NutritionTransportError('backend_not_configured');
+  if (session.error) throw new NutritionTransportError(session.error.name === 'AuthRetryableFetchError' ? 'network' : 'backend_not_configured');
   if (!session.data.session) {
     const signedIn = await client.auth.signInAnonymously();
-    if (signedIn.error) throw new NutritionTransportError('backend_not_configured');
+    if (signedIn.error) throw new NutritionTransportError(signedIn.error.name === 'AuthRetryableFetchError' ? 'network' : 'backend_not_configured');
   } else if ((session.data.session.expires_at ?? 0) * 1000 <= Date.now() + 30000) {
     const refreshed = await client.auth.refreshSession();
-    if (refreshed.error) throw new NutritionTransportError('backend_not_configured');
+    if (refreshed.error) throw new NutritionTransportError(refreshed.error.name === 'AuthRetryableFetchError' ? 'network' : 'backend_not_configured');
   }
   const current = await client.auth.getSession();
   const token = current.data.session?.access_token;
   if (!token) throw new NutritionTransportError('backend_not_configured');
+  return { client, token, owner: current.data.session!.user.id, config };
+}
+
+export async function requestNutrition(job: NutritionJob) {
+  const { client, token, owner, config } = await nutritionSession();
   const functionName = process.env.EXPO_PUBLIC_NUTRITION_FUNCTION ?? 'nutrition-estimate';
   if (!/^[a-z0-9-]{1,80}$/.test(functionName)) throw new NutritionTransportError('backend_not_configured');
-  const owner = current.data.session!.user.id;
   const { data: stale } = await client.storage.from('meal-photos').list(owner, { limit: 100, sortBy: { column: 'created_at', order: 'asc' } });
   const old = (stale ?? []).filter((file) => /^[a-f0-9]{32}\.jpg$/.test(file.name) && file.name !== `${job.id}.jpg` && Date.parse(file.created_at ?? '') < Date.now()-86400000);
   if (old.length) await client.storage.from('meal-photos').remove(old.map((file) => `${owner}/${file.name}`));
