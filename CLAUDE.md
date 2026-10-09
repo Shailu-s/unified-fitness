@@ -114,7 +114,9 @@ production photo inference gated off until review/deployment. Founder-approved i
 nutrition-photo-preview is deployed and enabled with JWT verification and a separate
 preview flag; development client targets it on port 8084. October budget verified
 unchanged at $1 limit/$0.04 reserved; validation checks made no new inference calls.
-80 automated tests/typechecks/bundles pass; Expo compatibility checker recommends
+Founder photo preparation failure reproduced at native hashing boundary and fixed
+by passing Uint8Array rather than ArrayBuffer; Upload from gallery is now prominent.
+83 automated tests/typechecks/bundles pass; phone retest pending. Expo compatibility checker recommends
 October 6 patches retained pending seven-day age/review. Native photo QA, actual
 food-image inference and reference-meal evaluation remain required.
 Never dump or commit dotenv values; mobile configuration may contain only public

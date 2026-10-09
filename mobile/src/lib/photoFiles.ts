@@ -37,7 +37,7 @@ export async function photoUploadData(uri: string) {
   validateOwnedPhotoUri(uri, directory().uri);
   const bytes = stripJpegMetadata(await new File(uri).bytes());
   validatePhotoBytes(bytes);
-  const digest = await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, new Uint8Array(bytes).buffer);
+  const digest = await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, new Uint8Array(bytes));
   const sha256 = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
   return { bytes, sha256 };
 }

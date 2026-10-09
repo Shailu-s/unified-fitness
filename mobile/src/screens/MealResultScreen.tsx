@@ -56,7 +56,7 @@ export function MealResultScreen({ id, onClose }: { id: string; onClose: () => v
         <ScrollView contentContainerStyle={s.body}>
           {meal.photoUri && <Image source={{ uri: meal.photoUri }} style={s.image} accessibilityLabel="Saved meal photo" />}
           <Text style={s.name}>{meal.name}</Text>
-          <Text style={s.help}>{meal.portion}</Text>
+          <Text style={s.help}>{meal.inputType === 'photo' && meal.portion === 'Portion not specified' ? 'Portions are approximate. Add actual quantities if you know them.' : meal.portion}</Text>
           {isDraft && <Text style={s.help}>Draft saved on your phone · not included in daily totals until you tap Save meal.</Text>}
           {pending ? (
             <View style={s.status}>

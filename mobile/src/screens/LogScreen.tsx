@@ -174,7 +174,10 @@ export function LogScreen() {
           </Pressable>
         </View>
         <Text style={s.cap}>Photo → review → save · or type a meal</Text>
-        <Pressable onPress={() => { void snap('gallery'); }} disabled={preparingPhoto} accessibilityRole="button"><Text style={s.actionText}>Choose a meal photo</Text></Pressable>
+        <Pressable onPress={() => { void snap('gallery'); }} disabled={preparingPhoto} accessibilityRole="button"
+          accessibilityLabel="Upload a meal photo from gallery" accessibilityState={{ disabled: preparingPhoto }} style={s.galleryButton}>
+          <Text style={s.actionText}>{preparingPhoto ? 'Preparing photo…' : 'Upload from gallery'}</Text>
+        </Pressable>
       </View>
       {historyOpen && <HistoryScreen onClose={() => setHistoryOpen(false)} />}
       {resultId && !editorOpen && <MealResultScreen id={resultId} onClose={() => setResultId(null)} />}
@@ -217,6 +220,7 @@ const s = StyleSheet.create({
   emptyLine: { fontFamily: fonts.uiSemi, fontSize: 15, letterSpacing: -0.15, color: colors.ink },
   emptySub: { fontFamily: fonts.ui, fontSize: 13, color: colors.inkLow, marginTop: 5 },
   bottom: { paddingTop: 16, paddingHorizontal: 20, backgroundColor: colors.paper, alignItems: 'center' },
+  galleryButton: { alignSelf: 'stretch', alignItems: 'center', paddingVertical: 12, marginTop: 10, borderWidth: 1, borderColor: colors.rule, borderRadius: 12, backgroundColor: colors.card },
   satRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 26 },
   sat: {
     width: 46,

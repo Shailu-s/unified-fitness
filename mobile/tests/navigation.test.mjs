@@ -34,6 +34,9 @@ test('photo capture creates a reviewable draft and the result screen offers expl
   const result = readFileSync(new URL('../src/screens/MealResultScreen.tsx', import.meta.url), 'utf8');
   assert.match(log, /const meal = addPhotoDraft\(/);
   assert.match(log, /Photo drafts · not logged yet/);
+  assert.match(log, /snap\('gallery'\)/);
+  assert.match(log, /Upload from gallery/);
+  assert.match(log, /accessibilityLabel="Upload a meal photo from gallery"/);
   assert.match(result, /savePhotoDraft\(id\)/);
   assert.match(result, /pending \? 'Save meal without waiting' : 'Save meal'/);
   assert.match(result, /isDraft \? 'Later' : 'Done'/);
