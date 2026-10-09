@@ -24,7 +24,7 @@ export function HomeScreen({ onOpenLog }: { onOpenLog: () => void }) {
           </View>
         </View>
 
-        <Text style={{ fontFamily: fonts.ui, fontSize: 12, color: colors.inkMid, marginTop: 12 }}>Demo activity · health connection coming next</Text>
+        <Text style={{ fontFamily: fonts.ui, fontSize: 12, color: colors.inkMid, marginTop: 12 }}>Demo activity</Text>
         <View style={s.gap1} />
 
         <View style={s.stepsLine}>
@@ -55,11 +55,11 @@ export function HomeScreen({ onOpenLog }: { onOpenLog: () => void }) {
         <Pressable
           onPress={onOpenLog}
           accessibilityRole="button"
-          accessibilityLabel="Log food, workout, or search"
+          accessibilityLabel="Log food"
           style={({ pressed }) => [s.search, pressed && s.searchPressed]}
         >
           <SearchIcon color={colors.inkLow} />
-          <Text style={s.searchText}>Log food, workout, or search</Text>
+          <Text style={s.searchText}>Log food</Text>
         </Pressable>
       </View>
     </View>

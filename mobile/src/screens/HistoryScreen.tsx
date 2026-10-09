@@ -46,14 +46,14 @@ export function HistoryScreen({ onClose }: { onClose: () => void }) {
     <Modal visible animationType="slide" presentationStyle="pageSheet" allowSwipeDismissal onRequestClose={onClose}>
       <View style={[s.root, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 12 }]}>
         <View style={s.header}>
-          <Text style={s.title}>Meal history</Text>
+          <Text style={s.title}>History</Text>
           <Pressable onPress={onClose} accessibilityRole="button" hitSlop={12}>
             <Text style={s.action}>Done</Text>
           </Pressable>
         </View>
         <View style={s.navigation}>
           <Pressable onPress={() => loadDay(shiftLocalDay(view.day, -1))} accessibilityRole="button" accessibilityLabel="Previous day" style={s.navButton}>
-            <Text style={s.action}>Previous</Text>
+            <Text style={s.action}>Prev</Text>
           </Pressable>
           <Text style={s.day}>{label}</Text>
           <Pressable onPress={() => loadDay(shiftLocalDay(view.day, 1))} disabled={view.day >= today}
@@ -62,11 +62,10 @@ export function HistoryScreen({ onClose }: { onClose: () => void }) {
           </Pressable>
         </View>
         <Pressable onPress={() => loadDay(localDateKey(new Date()))} accessibilityRole="button" style={s.todayButton}>
-          <Text style={s.action}>Back to today</Text>
+          <Text style={s.action}>Today</Text>
         </Pressable>
         {view.days.length > 0 && (
           <View style={s.loggedDays}>
-            <Text style={s.caption}>Days with meals</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.dayChips}>
               {view.days.filter((day) => day <= today).map((day) => (
                 <Pressable key={day} onPress={() => loadDay(day)} accessibilityRole="button" accessibilityLabel={`Show meals for ${day}`}
@@ -79,7 +78,7 @@ export function HistoryScreen({ onClose }: { onClose: () => void }) {
         )}
         {readError ? (
           <View style={s.empty}>
-            <Text accessibilityRole="alert" style={s.help}>Could not read saved meals. Your data has not been reset.</Text>
+            <Text accessibilityRole="alert" style={s.help}>Could not load meals.</Text>
             <Pressable onPress={() => loadDay(selectedDay.current)} accessibilityRole="button" style={s.todayButton}>
               <Text style={s.action}>Retry</Text>
             </Pressable>
@@ -89,13 +88,11 @@ export function HistoryScreen({ onClose }: { onClose: () => void }) {
             <View style={s.summary}>
               <Text style={s.totals}>{num(totals.kcal)} kcal · {num(totals.protein)} g protein · {num(totals.fibre)} g fibre</Text>
               <Text style={s.help}>Carbs {totals.carbs === null ? '—' : num(totals.carbs)} g · Fat {totals.fat === null ? '—' : num(totals.fat)} g</Text>
-              <Text style={s.help}>
-                {totals.pending > 0 ? `${totals.pending} not estimated · known nutrition only` : 'Daily totals · known nutrition only'}
-              </Text>
+              {totals.pending > 0 && <Text style={s.help}>{totals.pending} pending · partial totals</Text>}
             </View>
             <FlatList data={view.meals} keyExtractor={(meal) => meal.id} style={s.list} contentContainerStyle={s.listContent}
               renderItem={({ item, index }) => <MealRow meal={item} last={index === view.meals.length - 1} onPress={() => setEditingMeal(item)} />}
-              ListEmptyComponent={<Text style={s.help}>No meals logged on this day.</Text>} />
+              ListEmptyComponent={<Text style={s.help}>No meals.</Text>} />
           </>
         )}
       </View>
@@ -120,7 +117,6 @@ const s = StyleSheet.create({
   disabled: { color: colors.inkLow },
   todayButton: { paddingVertical: 12, alignItems: 'center' },
   loggedDays: { marginTop: 12 },
-  caption: { paddingHorizontal: gutter, fontFamily: fonts.uiMedium, fontSize: 12, color: colors.inkMid },
   dayChips: { paddingHorizontal: gutter, paddingVertical: 10, gap: 8 },
   chip: { borderWidth: 1, borderColor: colors.rule, borderRadius: 18, paddingVertical: 8, paddingHorizontal: 12 },
   selectedChip: { borderColor: colors.protein, backgroundColor: colors.card },

@@ -33,14 +33,45 @@ test('photo capture creates a reviewable draft and the result screen offers expl
   const log = readFileSync(new URL('../src/screens/LogScreen.tsx', import.meta.url), 'utf8');
   const result = readFileSync(new URL('../src/screens/MealResultScreen.tsx', import.meta.url), 'utf8');
   assert.match(log, /const meal = addPhotoDraft\(/);
-  assert.match(log, /Photo drafts · not logged yet/);
+  assert.match(log, />Drafts<\/Text>/);
   assert.match(log, /snap\('gallery'\)/);
-  assert.match(log, /Upload from gallery/);
-  assert.match(log, /accessibilityLabel="Upload a meal photo from gallery"/);
+  assert.match(log, /accessibilityLabel="Add photo from camera or gallery"/);
   assert.match(result, /savePhotoDraft\(id\)/);
-  assert.match(result, /pending \? 'Save meal without waiting' : 'Save meal'/);
+  assert.match(result, /pending \? 'Save now' : 'Save'/);
   assert.match(result, /isDraft \? 'Later' : 'Done'/);
   assert.match(result, /discardPhotoDraft\(id\)/);
+});
+
+test('photo review overlays macros at the bottom of the image without portion or assumption copy', () => {
+  const result = readFileSync(new URL('../src/screens/MealResultScreen.tsx', import.meta.url), 'utf8');
+  assert.match(result, /style=\{s\.photo\}/);
+  assert.match(result, /style=\{s\.overlay\}/);
+  assert.match(result, /overlay: \{[^\n]*position: 'absolute'[^\n]*bottom: 0/);
+  assert.match(result, /AI estimate/);
+  assert.equal(result.includes('meal.assumptions'), false);
+  assert.equal(result.includes('meal.portion'), false);
+  assert.equal(result.includes('meal.foods.map'), false);
+  assert.match(result, />Edit<\/Text>/);
+  assert.match(result, />Remove<\/Text>/);
+  assert.match(result, /accessibilityLabel="Remove photo"/);
+});
+
+test('camera control opens a camera/gallery chooser with no standalone gallery button', () => {
+  const log = readFileSync(new URL('../src/screens/LogScreen.tsx', import.meta.url), 'utf8');
+  assert.match(log, /onPress=\{choosePhoto\}/);
+  assert.match(log, /options: \['Camera', 'Gallery', 'Cancel'\]/);
+  assert.match(log, /cancelButtonIndex: 2/);
+  assert.match(log, /text: 'Gallery', onPress: .*snap\('gallery'\)/);
+  assert.equal(log.includes('galleryButton'), false);
+});
+
+test('meal editor keeps editable macros without portion prompts or explanatory paragraphs', () => {
+  const editor = readFileSync(new URL('../src/components/MealEditor.tsx', import.meta.url), 'utf8');
+  assert.equal(editor.includes('Portion (optional)'), false);
+  assert.equal(editor.includes('meal.assumptions'), false);
+  assert.equal(editor.includes('Saved offline immediately'), false);
+  assert.equal(editor.includes('Correct an estimate if needed'), false);
+  for (const label of ['Calories (kcal)', 'Protein (g)', 'Carbs (g)', 'Fat (g)', 'Fibre (g)']) assert.ok(editor.includes(label));
 });
 
 test('isolated photo preview retains JWT verification and separate activation from production', () => {

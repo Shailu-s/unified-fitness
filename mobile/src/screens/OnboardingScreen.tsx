@@ -24,11 +24,11 @@ const DIETS: { value: Diet; title: string; sub: string }[] = [
 ];
 
 const COPY = [
-  { title: 'What should we call you?', sub: 'Just a first name.' },
-  { title: 'What is your goal?', sub: 'This sets your daily targets.' },
-  { title: 'About you', sub: 'Used once to estimate how much you burn.' },
-  { title: 'How do you eat?', sub: 'Your quick picks start from this.' },
-  { title: 'Your daily targets', sub: 'Worked out from your goal and body.' },
+  { title: 'Your name' },
+  { title: 'Your goal' },
+  { title: 'About you' },
+  { title: 'Your diet' },
+  { title: 'Daily targets' },
 ];
 
 export function OnboardingScreen() {
@@ -74,7 +74,6 @@ export function OnboardingScreen() {
             contentContainerStyle={s.body}
           >
             <Text style={s.title}>{COPY[step].title}</Text>
-            <Text style={s.sub}>{COPY[step].sub}</Text>
 
             <View style={s.content}>
               {step === 0 && (
@@ -177,7 +176,6 @@ const s = StyleSheet.create({
 
   body: { paddingTop: 40, paddingBottom: 24 },
   title: { fontFamily: fonts.uiSemi, fontSize: 28, letterSpacing: -0.7, lineHeight: 34, color: colors.ink },
-  sub: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 21, color: colors.inkLow, marginTop: 8 },
   content: { marginTop: 28 },
 
   input: {

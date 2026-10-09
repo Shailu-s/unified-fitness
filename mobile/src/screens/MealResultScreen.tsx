@@ -7,14 +7,15 @@ import { colors, fonts, gutter } from '../theme';
 import { num } from '../lib/format';
 import { removeLocalPhoto } from '../lib/photoFiles';
 import { PrimaryButton } from '../components/ui';
+import type { SavedMeal } from '../types';
 
 const errors: Record<string, string> = {
-  not_food: 'Food was not clearly visible. Add a food description or take a clearer photo; no calories were invented.',
-  budget_exceeded: 'The testing budget is reached. Your meal and photo are saved safely.',
-  invalid_result: 'The estimate could not be validated. Edit the food or retry.',
-  photo_upload: 'The local photo could not be prepared. Your meal remains saved; try another photo.',
-  backend_not_configured: 'Estimation setup is unavailable. Your meal is saved safely.',
-  network: 'Could not finish after retries. Your meal is saved; retry when connected.',
+  not_food: 'No food detected. Try another photo.',
+  budget_exceeded: 'Estimate limit reached.',
+  invalid_result: 'Estimate unavailable. Retry or edit.',
+  photo_upload: 'Photo unavailable. Retry or choose another.',
+  backend_not_configured: 'Estimates unavailable. Meal kept.',
+  network: 'Connection failed. Retry when online.',
 };
 
 export function MealResultScreen({ id, onClose }: { id: string; onClose: () => void }) {
@@ -26,75 +27,54 @@ export function MealResultScreen({ id, onClose }: { id: string; onClose: () => v
   const pending = meal.nutritionStatus === 'pending';
   const waitingSetup = meal.inputType === 'photo' && !photosEnabled;
   const isDraft = meal.logState === 'draft';
+  const loading = pending && meal.estimateState !== 'failed' && !waitingSetup;
+  const status = waitingSetup ? 'Estimates unavailable' : meal.estimateState === 'failed' ? errors[meal.estimateError ?? 'network'] ?? errors.network :
+    meal.estimateError === 'network' ? 'Offline · retrying' : meal.estimateState === 'running' ? 'Estimating…' : 'Queued';
   const save = () => {
     try { savePhotoDraft(id); onClose(); }
-    catch { setLocalError('Could not save the meal. Your draft is safe; check device storage and retry.'); }
+    catch { setLocalError('Not saved. Try again.'); }
   };
-  const discard = () => Alert.alert('Discard this photo draft?', 'The draft and its local photo will be removed. Nothing will be added to your daily totals.', [
-    { text: 'Keep draft', style: 'cancel' }, { text: 'Discard draft', style: 'destructive', onPress: () => {
+  const discard = () => Alert.alert('Discard draft?', 'Removes this draft and its photo.', [
+    { text: 'Cancel', style: 'cancel' }, { text: 'Discard', style: 'destructive', onPress: () => {
       try { discardPhotoDraft(id); }
-      catch { setLocalError('Could not discard the draft. Check device storage and retry.'); return; }
+      catch { setLocalError('Not discarded. Try again.'); return; }
       try { if (meal.photoUri) removeLocalPhoto(meal.photoUri); }
-      catch { Alert.alert('Draft discarded', 'The local photo could not be removed from device storage.'); }
+      catch { Alert.alert('Draft discarded', 'Photo cleanup failed.'); }
       onClose();
     } },
   ]);
   if (meal.logState === 'discarded') return null;
-  const remove = () => Alert.alert('Remove this photo?', 'Nutrition and meal details stay. The saved photo on this device will be removed.', [
-    { text: 'Cancel', style: 'cancel' }, { text: 'Remove photo', style: 'destructive', onPress: () => {
+  const remove = () => Alert.alert('Remove photo?', 'Meal and macros stay.', [
+    { text: 'Cancel', style: 'cancel' }, { text: 'Remove', style: 'destructive', onPress: () => {
       try { const uri = meal.photoUri; removePhoto(id); if (uri) removeLocalPhoto(uri); }
-      catch { setLocalError('Could not fully remove the photo. Check device storage and retry.'); }
+      catch { setLocalError('Photo not removed. Try again.'); }
     } },
   ]);
   return (
     <Modal visible animationType="slide" onRequestClose={onClose}>
       <View style={[s.root, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 }]}>
         <View style={s.header}>
-          <Text style={s.title}>{isDraft ? 'Review your meal' : 'Your meal'}</Text>
-          <Pressable onPress={onClose} accessibilityRole="button"><Text style={s.action}>{isDraft ? 'Later' : 'Done'}</Text></Pressable>
+          <Text style={s.title}>{isDraft ? 'Draft' : 'Meal'}</Text>
+          <Pressable onPress={onClose} accessibilityRole="button" hitSlop={12}><Text style={s.action}>{isDraft ? 'Later' : 'Done'}</Text></Pressable>
         </View>
         <ScrollView contentContainerStyle={s.body}>
-          {meal.photoUri && <Image source={{ uri: meal.photoUri }} style={s.image} accessibilityLabel="Saved meal photo" />}
-          <Text style={s.name}>{meal.name}</Text>
-          <Text style={s.help}>{meal.inputType === 'photo' && meal.portion === 'Portion not specified' ? 'Portions are approximate. Add actual quantities if you know them.' : meal.portion}</Text>
-          {isDraft && <Text style={s.help}>Draft saved on your phone · not included in daily totals until you tap Save meal.</Text>}
-          {pending ? (
-            <View style={s.status}>
-              {meal.estimateState !== 'failed' && !waitingSetup && <ActivityIndicator size="large" color={colors.protein} />}
-              <Text accessibilityRole={meal.estimateState === 'failed' ? 'alert' : undefined} style={s.statusText}>
-                {waitingSetup ? 'Photo saved on your phone. Photo backend activation is pending.' : meal.estimateState === 'failed' ? errors[meal.estimateError ?? 'network'] ?? errors.network :
-                  meal.estimateError === 'network' ? 'Still working — retrying when connected.' : meal.estimateState === 'running' ? 'Estimating your meal…' : 'Saved on your phone. Waiting to estimate…'}
-              </Text>
-              <Text style={s.help}>You can leave this screen. Logging never waits for the network.</Text>
-            </View>
-          ) : (
-            <>
-              <Text style={s.badge}>{meal.nutritionStatus === 'manual' ? 'Your corrected nutrition' : 'AI estimate · approximate'}</Text>
-              <View style={s.macros}>
-                <Metric label="Calories" value={meal.kcal} unit="kcal" />
-                <Metric label="Protein" value={meal.protein} unit="g" />
-                <Metric label="Carbs" value={meal.carbs} unit="g" />
-              </View>
-              <Text style={s.help}>Fat {meal.fat === null ? '—' : num(meal.fat)} g · Fibre {meal.fibre === null ? '—' : num(meal.fibre)} g</Text>
-              {meal.foods.length > 0 && <View style={s.section}>
-                <Text style={s.heading}>Identified foods · guessed portions</Text>
-                {meal.foods.map((food, index) => <Text key={index} style={s.help}>{food.name} — {food.portion}</Text>)}
-              </View>}
-              <View style={s.section}>
-                <Text style={s.heading}>Portion and preparation assumptions</Text>
-                {meal.assumptions.length ? meal.assumptions.map((assumption, index) => <Text key={index} style={s.help}>{assumption}</Text>) : <Text style={s.help}>No model assumptions on manually entered values.</Text>}
-                {meal.inputType === 'photo' && <Text style={s.help}>A photo cannot measure hidden oil/ghee or recipe ingredients. Add actual quantities when known.</Text>}
-              </View>
-            </>
-          )}
-          <Pressable onPress={() => setEditing(true)} accessibilityRole="button" style={s.button}><Text style={s.action}>Edit foods, portions or nutrition</Text></Pressable>
-          {meal.estimateState === 'failed' && !waitingSetup && <Pressable onPress={() => retryEstimate(id)} accessibilityRole="button" style={s.button}><Text style={s.action}>Retry estimate</Text></Pressable>}
-          {meal.photoUri && <Pressable onPress={remove} accessibilityRole="button" style={s.button}><Text style={s.action}>Remove local photo</Text></Pressable>}
-          {localError && <Text accessibilityRole="alert" style={s.help}>{localError}</Text>}
+          {meal.photoUri ? <View style={s.photo}>
+            <Image source={{ uri: meal.photoUri }} style={s.image} accessibilityLabel="Meal photo" />
+            <View style={s.overlay}><Macros meal={meal} pending={pending} status={status} loading={loading} light /></View>
+          </View> : <View style={s.summary}>
+            <Text style={s.name}>{meal.name}</Text>
+            <Macros meal={meal} pending={pending} status={status} loading={loading} />
+          </View>}
+          <View style={s.actions}>
+            <Pressable onPress={() => setEditing(true)} accessibilityRole="button" style={s.button}><Text style={s.action}>Edit</Text></Pressable>
+            {meal.photoUri && <Pressable onPress={remove} accessibilityRole="button" accessibilityLabel="Remove photo" style={s.button}><Text style={s.action}>Remove</Text></Pressable>}
+            {meal.estimateState === 'failed' && !waitingSetup && <Pressable onPress={() => retryEstimate(id)} accessibilityRole="button" style={s.button}><Text style={s.action}>Retry</Text></Pressable>}
+          </View>
+          {localError && <Text accessibilityRole="alert" style={s.error}>{localError}</Text>}
         </ScrollView>
         {isDraft && <View style={s.footer}>
-          <PrimaryButton label={pending ? 'Save meal without waiting' : 'Save meal'} onPress={save} />
-          <Pressable onPress={discard} accessibilityRole="button" style={s.discard}><Text style={s.action}>Discard draft</Text></Pressable>
+          <PrimaryButton label={pending ? 'Save now' : 'Save'} onPress={save} />
+          <Pressable onPress={discard} accessibilityRole="button" style={s.discard}><Text style={s.action}>Discard</Text></Pressable>
         </View>}
       </View>
       {editing && <MealEditor meal={meal} onClose={() => setEditing(false)} onSave={(input) => updateMeal(id, input)} />}
@@ -102,28 +82,54 @@ export function MealResultScreen({ id, onClose }: { id: string; onClose: () => v
   );
 }
 
-function Metric({ label, value, unit }: { label: string; value: number | null; unit: string }) {
-  return <View style={s.metric}><Text style={s.number}>{value === null ? '—' : num(value)}</Text><Text style={s.help}>{unit}</Text><Text style={s.label}>{label}</Text></View>;
+function Macros({ meal, pending, status, loading, light = false }: { meal: SavedMeal; pending: boolean; status: string; loading: boolean; light?: boolean }) {
+  return <View style={s.nutrition}>
+    <View style={s.status}>
+      {loading && <ActivityIndicator size="small" color={light ? '#ffffff' : colors.protein} />}
+      <Text accessibilityRole={pending && meal.estimateState === 'failed' ? 'alert' : undefined} style={[s.badge, light && s.light]}>
+        {pending ? status : meal.nutritionStatus === 'manual' ? 'Edited' : 'AI estimate'}
+      </Text>
+    </View>
+    <View style={s.macros}>
+      <Metric label="kcal" value={meal.kcal} light={light} />
+      <Metric label="Protein" value={meal.protein} unit="g" light={light} />
+      <Metric label="Carbs" value={meal.carbs} unit="g" light={light} />
+    </View>
+    <Text style={[s.secondary, light && s.light]}>Fat {meal.fat === null ? '—' : num(meal.fat)} g · Fibre {meal.fibre === null ? '—' : num(meal.fibre)} g</Text>
+  </View>;
 }
+
+function Metric({ label, value, unit, light }: { label: string; value: number | null; unit?: string; light: boolean }) {
+  return <View style={s.metric}>
+    <Text style={[s.number, light && s.light]}>{value === null ? '—' : num(value)}{unit ? <Text style={s.unit}> {unit}</Text> : null}</Text>
+    <Text style={[s.label, light && s.light]}>{label}</Text>
+  </View>;
+}
+
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.paper },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: gutter, paddingBottom: 16 },
-  body: { paddingHorizontal: gutter, gap: 14, paddingBottom: 24 },
-  title: { fontFamily: fonts.uiSemi, fontSize: 24, color: colors.ink },
+  body: { paddingHorizontal: gutter, gap: 12, paddingBottom: 24 },
+  title: { fontFamily: fonts.uiSemi, fontSize: 20, color: colors.ink },
   action: { fontFamily: fonts.uiMedium, fontSize: 14, color: colors.protein },
   name: { fontFamily: fonts.uiSemi, fontSize: 22, color: colors.ink },
-  image: { width: '100%', height: 240, borderRadius: 18, resizeMode: 'cover' },
-  help: { fontFamily: fonts.ui, fontSize: 14, color: colors.inkMid, lineHeight: 21 },
-  badge: { fontFamily: fonts.uiMedium, fontSize: 13, color: colors.protein },
+  photo: { borderRadius: 20, overflow: 'hidden', backgroundColor: colors.card },
+  image: { width: '100%', aspectRatio: 0.8, resizeMode: 'cover' },
+  overlay: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 18, backgroundColor: 'rgba(0, 0, 0, 0.62)' },
+  summary: { gap: 20, paddingVertical: 20 },
+  nutrition: { gap: 12 },
+  badge: { fontFamily: fonts.uiMedium, fontSize: 12, color: colors.inkMid, flexShrink: 1 },
+  status: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   macros: { flexDirection: 'row', gap: 10 },
-  metric: { flex: 1, paddingVertical: 18, alignItems: 'center', backgroundColor: colors.card, borderRadius: 14 },
-  number: { fontFamily: fonts.monoBold, fontSize: 27, color: colors.ink },
-  label: { fontFamily: fonts.uiMedium, fontSize: 12, color: colors.ink, marginTop: 8 },
-  heading: { fontFamily: fonts.uiSemi, fontSize: 15, color: colors.ink },
-  section: { gap: 10, paddingTop: 14 },
-  status: { gap: 14, paddingVertical: 30, alignItems: 'center' },
-  statusText: { fontFamily: fonts.uiMedium, fontSize: 16, color: colors.ink, textAlign: 'center' },
-  button: { paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.rule },
-  footer: { paddingHorizontal: gutter, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.rule },
+  metric: { flex: 1, minWidth: 0 },
+  number: { fontFamily: fonts.monoBold, fontSize: 24, color: colors.ink },
+  unit: { fontFamily: fonts.ui, fontSize: 12 },
+  label: { fontFamily: fonts.uiMedium, fontSize: 12, color: colors.inkMid, marginTop: 4 },
+  secondary: { fontFamily: fonts.ui, fontSize: 12, color: colors.inkMid },
+  light: { color: '#ffffff' },
+  actions: { flexDirection: 'row', gap: 24 },
+  button: { paddingVertical: 14 },
+  error: { fontFamily: fonts.ui, fontSize: 13, color: colors.inkMid },
+  footer: { paddingHorizontal: gutter, paddingTop: 12 },
   discard: { paddingVertical: 16, alignItems: 'center' },
 });

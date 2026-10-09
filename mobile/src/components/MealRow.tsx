@@ -4,7 +4,7 @@ import { colors, fonts, radius } from '../theme';
 
 export function MealRow({ meal, last, onPress }: { meal: SavedMeal; last: boolean; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`Edit ${meal.name}`} style={[s.row, !last && s.divider]}>
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`Open ${meal.name}`} style={[s.row, !last && s.divider]}>
       <View style={s.thumb}>
         {meal.photoUri ? <Image source={{ uri: meal.photoUri }} style={s.thumbnail} accessibilityLabel="Meal photo" /> : <Text style={s.emoji}>{meal.emoji || '•'}</Text>}
       </View>
@@ -13,14 +13,11 @@ export function MealRow({ meal, last, onPress }: { meal: SavedMeal; last: boolea
           {meal.name}
         </Text>
         <Text style={s.sub}>
-          {meal.time} · {meal.portion}
-        </Text>
-        <Text style={s.sub}>
-          {meal.estimateState === 'queued' ? meal.estimateError === 'network' ? 'Retrying when connected' : 'Queued for estimate' : meal.estimateState === 'running' ? 'Estimating…' :
-            meal.estimateState === 'failed' ? 'Estimate failed · saved safely' : meal.nutritionStatus === 'estimated' ? 'Estimated' : 'Corrected nutrition'}
+          {meal.time} · {meal.estimateState === 'queued' ? meal.estimateError === 'network' ? 'Offline' : 'Pending' : meal.estimateState === 'running' ? 'Estimating…' :
+            meal.estimateState === 'failed' ? 'Failed' : meal.nutritionStatus === 'estimated' ? 'Estimate' : 'Edited'}
         </Text>
       </View>
-      <Text style={s.kcal}>{meal.kcal === null ? 'Not estimated' : `${meal.kcal} kcal`}</Text>
+      <Text style={s.kcal}>{meal.kcal === null ? '—' : `${meal.kcal} kcal`}</Text>
     </Pressable>
   );
 }

@@ -5,7 +5,6 @@ import { colors, fonts, gutter } from '../theme';
 import { mealDraftInput } from '../lib/mealDraft';
 import type { MealInput, SavedMeal } from '../types';
 import { PrimaryButton } from './ui';
-import { useApp } from '../context/AppContext';
 
 export function MealEditor({ meal, onSave, onClose }: {
   meal: SavedMeal | null;
@@ -13,15 +12,13 @@ export function MealEditor({ meal, onSave, onClose }: {
   onClose: () => void;
 }) {
   const insets = useSafeAreaInsets();
-  const { estimatesEnabled } = useApp();
   const [name, setName] = useState(meal?.name ?? '');
-  const [portion, setPortion] = useState(meal?.portion ?? '');
+  const portion = meal?.portion ?? '';
   const [kcal, setKcal] = useState(meal?.kcal?.toString() ?? '');
   const [protein, setProtein] = useState(meal?.protein?.toString() ?? '');
   const [fibre, setFibre] = useState(meal?.fibre?.toString() ?? '');
   const [carbs, setCarbs] = useState(meal?.carbs?.toString() ?? '');
   const [fat, setFat] = useState(meal?.fat?.toString() ?? '');
-  const [showNutrition, setShowNutrition] = useState(meal?.nutritionStatus === 'manual');
   const [error, setError] = useState<string | null>(null);
 
   const save = () => {
@@ -41,24 +38,15 @@ export function MealEditor({ meal, onSave, onClose }: {
     <Modal visible animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={[s.header, { paddingTop: insets.top + 16 }]}>
-          <Text style={s.title}>{meal ? 'Edit meal' : 'Log food'}</Text>
+          <Text style={s.title}>{meal ? 'Edit' : 'Log meal'}</Text>
           <Pressable onPress={onClose} accessibilityRole="button" hitSlop={12}>
             <Text style={s.cancel}>Cancel</Text>
           </Pressable>
         </View>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.body}>
-          <Field label="What did you eat?" value={name} onChangeText={setName} placeholder="2 roti, 1 katori dal, rice" autoFocus multiline />
-          <Field label="Portion (optional)" value={portion} onChangeText={setPortion} placeholder="1 katori, 2 medium roti" />
-          <Text style={s.help}>{meal?.logState === 'draft' ? 'Changes stay in this draft. Tap Save meal on the review screen to add it to your daily totals.' : estimatesEnabled ? 'Saved offline immediately. Estimates arrive when connected; portion edits trigger a new estimate.' : 'Saved offline immediately. Unestimated meals are queued; live estimates are waiting for backend setup.'}</Text>
-          {meal?.assumptions?.length ? <Text style={s.help}>Estimate assumptions: {meal.assumptions.join(' · ')}</Text> : null}
+          <Field label="Meal" value={name} onChangeText={setName} placeholder="Roti, dal, rice" autoFocus={!meal} multiline />
           {meal && (
-            <Pressable onPress={() => setShowNutrition(!showNutrition)} accessibilityRole="button" accessibilityState={{ expanded: showNutrition }} style={s.toggle}>
-              <Text style={s.cancel}>{showNutrition ? 'Hide nutrition fields' : 'Correct nutrition (optional)'}</Text>
-            </Pressable>
-          )}
-          {showNutrition && (
             <>
-              <Text style={s.help}>Correct an estimate if needed. Older logs may have unknown carbs/fat; leave both blank or enter both. Blank is not zero.</Text>
               <Field label="Calories (kcal)" value={kcal} onChangeText={setKcal} numeric />
               <Field label="Protein (g)" value={protein} onChangeText={setProtein} numeric />
               <Field label="Carbs (g)" value={carbs} onChangeText={setCarbs} numeric />
@@ -69,7 +57,7 @@ export function MealEditor({ meal, onSave, onClose }: {
           {error && <Text accessibilityRole="alert" style={s.error}>{error}</Text>}
         </ScrollView>
         <View style={[s.footer, { paddingBottom: insets.bottom + 16 }]}>
-          <PrimaryButton label={meal ? 'Save changes' : 'Save meal'} onPress={save} disabled={!name.trim()} />
+          <PrimaryButton label="Save" onPress={save} disabled={!name.trim()} />
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -103,8 +91,6 @@ const s = StyleSheet.create({
   field: { gap: 8 },
   label: { fontFamily: fonts.uiMedium, fontSize: 13, color: colors.inkMid },
   input: { fontFamily: fonts.ui, fontSize: 16, color: colors.ink, backgroundColor: colors.card, borderColor: colors.rule, borderWidth: 1, borderRadius: 12, padding: 14 },
-  help: { fontFamily: fonts.ui, fontSize: 13, lineHeight: 20, color: colors.inkMid },
-  toggle: { paddingVertical: 12 },
   error: { fontFamily: fonts.uiMedium, fontSize: 13, color: colors.protein },
   footer: { paddingHorizontal: gutter, paddingTop: 12 },
 });

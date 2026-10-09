@@ -115,8 +115,10 @@ nutrition-photo-preview is deployed and enabled with JWT verification and a sepa
 preview flag; development client targets it on port 8084. October budget verified
 unchanged at $1 limit/$0.04 reserved; validation checks made no new inference calls.
 Founder photo preparation failure reproduced at native hashing boundary and fixed
-by passing Uint8Array rather than ArrayBuffer; Upload from gallery is now prominent.
-83 automated tests/typechecks/bundles pass; phone retest pending. Expo compatibility checker recommends
+by passing Uint8Array rather than ArrayBuffer. Founder now requests minimal photo UI:
+photo with bottom translucent macro overlay; short Edit/Remove/Save actions; no visible
+quantity/portion/assumption prompts. Camera icon offers native Camera/Gallery choices.
+86 automated tests/typechecks/bundles pass; upload/UI phone retest pending. Expo compatibility checker recommends
 October 6 patches retained pending seven-day age/review. Native photo QA, actual
 food-image inference and reference-meal evaluation remain required.
 Never dump or commit dotenv values; mobile configuration may contain only public
