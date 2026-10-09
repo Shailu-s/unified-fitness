@@ -1,7 +1,7 @@
 # 006: Photo-first capture with honest, durable estimates
 
 Date: 2026-10-05
-Status: Implemented on feature branch/PR; production activation, physical-device and nutrition-quality gates pending
+Status: Review-and-save implemented; isolated live preview enabled; production activation, physical-device and nutrition-quality gates pending
 
 ## Research and recommendation
 
@@ -32,3 +32,11 @@ Verification: 69 automated tests pass, including actual file/SQLite close/reopen
 Photo calls allow 4096 total output/reasoning tokens and reserve at least $0.02; text remains 2048 tokens with the configured $0.01 reservation. The existing total $1 cap is unchanged. Server PHOTO_API_ENABLED and client EXPO_PUBLIC_PHOTO_ESTIMATES_ENABLED default off; EXPO_PUBLIC_NUTRITION_FUNCTION permits an isolated same-project preview endpoint.
 
 Existing foundation was explicitly approved for a normal push to main. This feature is a separate PR; no automatic main merge, production schema reset or deployment of unreviewed code. Preserve US$1 total test cap. Preview deployment and image tests must not increase that cap. Automated storage/transport/model tests are not camera permission, media persistence, accuracy, iOS/Android or standalone cold-start sign-off.
+
+## Review before logging: founder refinement, 2026-10-10
+
+The founder now requires photo → estimated macros → an explicit option to save, rather than counting every selected image immediately. Keep SQLite as the durable source of truth: additive schema v3 introduces draft/saved/discarded state on the existing meal record, reusing its revision/job/estimate machinery. Drafts and photos persist before upload but are excluded from daily totals and calendar history. Save promotes the same ID without re-estimating or changing its capture date; repeated Save is idempotent. Later preserves the draft for resume, including across days. Confirmed Discard tombstones the draft, cancels jobs and removes the local photo; an already running request may still consume its reservation, but cannot apply a late result. JSON exports include active drafts in a separate optional field; this is not binary-image backup.
+
+A mandatory network-dependent Save would violate offline logging. Therefore pending/failed drafts also offer Save meal without waiting and manual nutrition correction; estimates can arrive later. Unchanged review edits preserve the existing estimate instead of creating another billable job. Portion/context changes use the same revision-protected estimator; numeric overrides remain personal. Photo accuracy and response speed remain uncertain, not promised.
+
+Founder approved isolated preview deployment and activation within the existing cap. Factor the shared server wiring so production and preview use the same validation, private storage, cache and budget enforcement. Production reads PHOTO_API_ENABLED; nutrition-photo-preview reads separate PHOTO_PREVIEW_API_ENABLED. Deploy only the preview entry with JWT verification; production text deployment hash remains unchanged. Development-only client overrides select the preview and enable photos; production defaults remain off. Hosted auth/input validation passes without inference. Actual food-photo inference and all physical-device gates remain pending.

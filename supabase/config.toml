@@ -2,3 +2,6 @@ project_id = "unified-fitness"
 
 [functions.nutrition-estimate]
 verify_jwt = true
+
+[functions.nutrition-photo-preview]
+verify_jwt = true

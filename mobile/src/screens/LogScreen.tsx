@@ -16,7 +16,7 @@ import type { SavedMeal } from '../types';
 import { colors, eyebrow, fonts, gutter } from '../theme';
 
 export function LogScreen() {
-  const { targets, meals, eaten, addMeal, updateMeal, getExportData } = useApp();
+  const { targets, meals, photoDrafts, eaten, addMeal, addPhotoDraft, updateMeal, getExportData } = useApp();
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
 
@@ -39,7 +39,7 @@ export function LogScreen() {
     finally { exportBusy.current = false; setExporting(false); }
   };
   const confirmExport = () => Alert.alert('Export your data',
-    'Includes your profile and all saved meals as JSON. Choose Save to Files to keep a copy on your device.',
+    'Includes your profile, saved meals and unsaved photo drafts as JSON. Photo files are not included. Choose Save to Files to keep a copy on your device.',
     [{ text: 'Cancel', style: 'cancel' }, { text: 'Continue', onPress: () => { void performExport(); } }],
   );
   const openEditor = (meal: SavedMeal | null = null) => {
@@ -74,7 +74,7 @@ export function LogScreen() {
       const uri = await pickMealPhoto(source);
       if (!uri) return;
       try {
-        const meal = addMeal({ name: '', portion: '', kcal: null, protein: null, fibre: null, inputType: 'photo', photoUri: uri });
+        const meal = addPhotoDraft({ name: '', portion: '', kcal: null, protein: null, fibre: null, inputType: 'photo', photoUri: uri });
         setResultId(meal.id);
       } catch (error) { removeLocalPhoto(uri); throw error; }
     } catch (error) {
@@ -125,20 +125,21 @@ export function LogScreen() {
 
         {/* Silence, not a divider, separates the day's targets from the day's record. */}
         <View style={[s.meals, { marginTop: height < 720 ? 32 : 66 }]}>
-          <Text style={s.mealsHead}>Eaten so far</Text>
-
-          {empty ? (
-            <View>
-              <Text style={s.emptyLine}>Nothing yet today.</Text>
-              <Text style={s.emptySub}>Type what you ate. Nutrition can wait.</Text>
-            </View>
-          ) : (
-            <ScrollView ref={listRef} showsVerticalScrollIndicator={false} style={s.list}>
-              {meals.map((m, i) => (
-                <MealRow key={m.id} meal={m} last={i === meals.length - 1} onPress={() => setResultId(m.id)} />
-              ))}
-            </ScrollView>
-          )}
+          <ScrollView ref={listRef} showsVerticalScrollIndicator={false} style={s.list}>
+            {photoDrafts.length > 0 && <View style={s.drafts}>
+              <Text style={s.mealsHead}>Photo drafts · not logged yet</Text>
+              {photoDrafts.map((draft, index) => <MealRow key={draft.id} meal={draft} last={index === photoDrafts.length - 1} onPress={() => setResultId(draft.id)} />)}
+            </View>}
+            <Text style={s.mealsHead}>Eaten so far</Text>
+            {empty ? (
+              <View>
+                <Text style={s.emptyLine}>Nothing yet today.</Text>
+                <Text style={s.emptySub}>Take a meal photo or type what you ate.</Text>
+              </View>
+            ) : meals.map((m, i) => (
+              <MealRow key={m.id} meal={m} last={i === meals.length - 1} onPress={() => setResultId(m.id)} />
+            ))}
+          </ScrollView>
         </View>
       </View>
 
@@ -172,7 +173,7 @@ export function LogScreen() {
             <MicIcon color={colors.inkMid} />
           </Pressable>
         </View>
-        <Text style={s.cap}>Camera or text · saved offline</Text>
+        <Text style={s.cap}>Photo → review → save · or type a meal</Text>
         <Pressable onPress={() => { void snap('gallery'); }} disabled={preparingPhoto} accessibilityRole="button"><Text style={s.actionText}>Choose a meal photo</Text></Pressable>
       </View>
       {historyOpen && <HistoryScreen onClose={() => setHistoryOpen(false)} />}
@@ -211,6 +212,7 @@ const s = StyleSheet.create({
   meals: { flex: 1, minHeight: 0 },
   mealsHead: { ...eyebrow, letterSpacing: 1.2, marginBottom: 13 },
   list: { flex: 1 },
+  drafts: { marginBottom: 20 },
 
   emptyLine: { fontFamily: fonts.uiSemi, fontSize: 15, letterSpacing: -0.15, color: colors.ink },
   emptySub: { fontFamily: fonts.ui, fontSize: 13, color: colors.inkLow, marginTop: 5 },

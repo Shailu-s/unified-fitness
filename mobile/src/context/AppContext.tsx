@@ -13,6 +13,10 @@ interface AppState {
   profile: Profile | null;
   targets: Targets;
   meals: SavedMeal[];
+  photoDrafts: SavedMeal[];
+  addPhotoDraft: (input: MealInput) => SavedMeal;
+  savePhotoDraft: (id: string) => SavedMeal;
+  discardPhotoDraft: (id: string) => void;
   eaten: ReturnType<typeof sumNutrition>;
   activity: Activity;
   ready: boolean;
@@ -38,6 +42,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const day = useRef(localDateKey(new Date()));
   const [profile, setProfile] = useState<Profile | null>(null);
   const [meals, setMeals] = useState<SavedMeal[]>([]);
+  const [photoDrafts, setPhotoDrafts] = useState<SavedMeal[]>([]);
   const [ready, setReady] = useState(false);
   const [storageError, setStorageError] = useState<string | null>(null);
   const photosEnabled = photoEstimatesEnabled();
@@ -59,6 +64,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const saved = requireRepository().getMeals(today);
       day.current = today;
       setMeals(saved);
+      setPhotoDrafts(requireRepository().getPhotoDrafts());
     }
   }, [requireRepository]);
 
@@ -75,6 +81,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       day.current = today;
       setProfile(savedProfile);
       setMeals(savedMeals);
+      setPhotoDrafts(store.getPhotoDrafts());
       setReady(true);
     } catch {
       setStorageError('Could not open local data. Your data has not been reset. Retry, or check device storage and app version.');
@@ -146,11 +153,27 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const updateMeal = useCallback((id: string, input: MealInput) => {
     refreshMeals();
     const saved = requireRepository().updateMeal(id, input);
-    setMeals((previous) => previous.map((meal) => meal.id === id ? saved : meal));
+    refreshMeals(true);
     kickEstimates();
     return saved;
   }, [requireRepository, refreshMeals, kickEstimates]);
 
+  const addPhotoDraft = useCallback((input: MealInput) => {
+    const draft = requireRepository().addPhotoDraft(input);
+    refreshMeals(true);
+    kickEstimates();
+    return draft;
+  }, [requireRepository, refreshMeals, kickEstimates]);
+  const savePhotoDraft = useCallback((id: string) => {
+    const meal = requireRepository().savePhotoDraft(id);
+    refreshMeals(true);
+    kickEstimates();
+    return meal;
+  }, [requireRepository, refreshMeals, kickEstimates]);
+  const discardPhotoDraft = useCallback((id: string) => {
+    requireRepository().discardPhotoDraft(id);
+    refreshMeals(true);
+  }, [requireRepository, refreshMeals]);
   const getMeal = useCallback((id: string) => requireRepository().getMeal(id), [requireRepository]);
   const retryEstimate = useCallback((id: string) => { requireRepository().retryNutritionJob(id); refreshMeals(true); kickEstimates(); }, [requireRepository, refreshMeals, kickEstimates]);
   const removePhoto = useCallback((id: string) => { const meal = requireRepository().removePhoto(id); refreshMeals(true); return meal; }, [requireRepository, refreshMeals]);
@@ -159,7 +182,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const getExportData = useCallback(() => requireRepository().getExportData(), [requireRepository]);
 
   const value: AppState = {
-    profile, targets, meals, eaten, activity: mockActivity, ready, storageError, retryStorage,
+    profile, targets, meals, photoDrafts, addPhotoDraft, savePhotoDraft, discardPhotoDraft, eaten, activity: mockActivity, ready, storageError, retryStorage,
     completeOnboarding, addMeal, updateMeal, getMealsForDay, getMealDays, getExportData, estimatesEnabled, getMeal, retryEstimate, removePhoto, photosEnabled,
   };
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

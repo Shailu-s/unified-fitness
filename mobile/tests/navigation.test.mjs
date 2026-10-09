@@ -29,6 +29,27 @@ test('History declares native sheet presentation and swipe-down dismissal', () =
   assert.equal(props.get('allowSwipeDismissal'), undefined);
 });
 
+test('photo capture creates a reviewable draft and the result screen offers explicit Save and Later', () => {
+  const log = readFileSync(new URL('../src/screens/LogScreen.tsx', import.meta.url), 'utf8');
+  const result = readFileSync(new URL('../src/screens/MealResultScreen.tsx', import.meta.url), 'utf8');
+  assert.match(log, /const meal = addPhotoDraft\(/);
+  assert.match(log, /Photo drafts · not logged yet/);
+  assert.match(result, /savePhotoDraft\(id\)/);
+  assert.match(result, /pending \? 'Save meal without waiting' : 'Save meal'/);
+  assert.match(result, /isDraft \? 'Later' : 'Done'/);
+  assert.match(result, /discardPhotoDraft\(id\)/);
+});
+
+test('isolated photo preview retains JWT verification and separate activation from production', () => {
+  const config = readFileSync(new URL('../../supabase/config.toml', import.meta.url), 'utf8');
+  const preview = readFileSync(new URL('../../supabase/functions/nutrition-photo-preview/index.ts', import.meta.url), 'utf8');
+  const production = readFileSync(new URL('../../supabase/functions/nutrition-estimate/index.ts', import.meta.url), 'utf8');
+  assert.match(config, /\[functions\.nutrition-photo-preview\]\s+verify_jwt = true/);
+  assert.match(preview, /PHOTO_PREVIEW_API_ENABLED/);
+  assert.match(production, /PHOTO_API_ENABLED/);
+  assert.equal(production.includes('PHOTO_PREVIEW_API_ENABLED'), false);
+});
+
 test('native dismissal and Done button use the same history close callback', () => {
   const elements = historyElements();
   const modal = elements.find((element) => element.tagName.getText() === 'Modal');

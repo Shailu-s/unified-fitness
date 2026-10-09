@@ -49,9 +49,9 @@ export function MealEditor({ meal, onSave, onClose }: {
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.body}>
           <Field label="What did you eat?" value={name} onChangeText={setName} placeholder="2 roti, 1 katori dal, rice" autoFocus multiline />
           <Field label="Portion (optional)" value={portion} onChangeText={setPortion} placeholder="1 katori, 2 medium roti" />
-          <Text style={s.help}>{estimatesEnabled ? 'Saved offline immediately. Estimates arrive when connected; portion edits trigger a new estimate.' : 'Saved offline immediately. Unestimated meals are queued; live estimates are waiting for backend setup.'}</Text>
+          <Text style={s.help}>{meal?.logState === 'draft' ? 'Changes stay in this draft. Tap Save meal on the review screen to add it to your daily totals.' : estimatesEnabled ? 'Saved offline immediately. Estimates arrive when connected; portion edits trigger a new estimate.' : 'Saved offline immediately. Unestimated meals are queued; live estimates are waiting for backend setup.'}</Text>
           {meal?.assumptions?.length ? <Text style={s.help}>Estimate assumptions: {meal.assumptions.join(' · ')}</Text> : null}
-          {meal && meal.nutritionStatus !== 'pending' && (
+          {meal && (
             <Pressable onPress={() => setShowNutrition(!showNutrition)} accessibilityRole="button" accessibilityState={{ expanded: showNutrition }} style={s.toggle}>
               <Text style={s.cancel}>{showNutrition ? 'Hide nutrition fields' : 'Correct nutrition (optional)'}</Text>
             </Pressable>

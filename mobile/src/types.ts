@@ -34,6 +34,7 @@ export interface SavedMeal extends Meal {
   updatedAt: string;
   loggedDate: string;
   nutritionStatus: 'pending' | 'manual' | 'estimated';
+  logState: 'draft' | 'saved' | 'discarded';
   carbs: number | null;
   fat: number | null;
   inputType: 'text' | 'photo';
@@ -84,6 +85,7 @@ export interface NutritionJob {
 export interface ExportData {
   profile: Profile | null;
   meals: SavedMeal[];
+  drafts?: SavedMeal[];
 }
 
 // A meal before it has an id and a time, e.g. a "usual" or a photo result.

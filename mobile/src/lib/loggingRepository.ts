@@ -19,7 +19,7 @@ type MealRecord = Omit<SavedMeal, 'time' | 'emoji' | 'assumptions' | 'estimateMo
 type JobRecord = Omit<NutritionJob, 'input'> & { inputJson: string };
 
 const columns = `m.id, m.name, m.portion, m.kcal, m.protein, m.fibre, m.carbs, m.fat,
-  m.nutrition_status AS nutritionStatus, m.logged_date AS loggedDate, m.created_at AS createdAt,
+  m.nutrition_status AS nutritionStatus, m.log_state AS logState, m.logged_date AS loggedDate, m.created_at AS createdAt,
   m.updated_at AS updatedAt, m.input_type AS inputType, m.photo_uri AS photoUri, m.revision,
   e.payload AS estimateJson, j.state AS jobState, j.error_code AS estimateError`;
 const mealFrom = `FROM meals m LEFT JOIN meal_estimates e ON e.meal_id = m.id AND e.revision = m.revision AND m.nutrition_status = 'pending'
@@ -56,7 +56,7 @@ export class LoggingRepository {
 
   initialize() {
     const version = this.db.getFirstSync<{ user_version: number }>('PRAGMA user_version')?.user_version ?? 0;
-    if (version > 2) throw new Error('Local data uses a newer app version. Update the app to open it.');
+    if (version > 3) throw new Error('Local data uses a newer app version. Update the app to open it.');
     this.db.execSync('PRAGMA journal_mode = WAL; PRAGMA synchronous = FULL; PRAGMA foreign_keys = ON;');
     if (version === 0) {
       this.db.withTransactionSync(() => this.db.execSync(`
@@ -101,13 +101,19 @@ export class LoggingRepository {
           );
           CREATE INDEX nutrition_jobs_ready ON nutrition_jobs (state, next_attempt_at, lease_until);
         `);
-        const pending = this.db.getAllSync<MealRecord>(`SELECT ${columns} ${mealFrom} WHERE m.nutrition_status = 'pending'`);
+        const pending = this.db.getAllSync<Pick<MealRecord, 'id' | 'name' | 'portion' | 'createdAt'>>("SELECT id, name, portion, created_at AS createdAt FROM meals WHERE nutrition_status = 'pending'");
         for (const meal of pending) this.prepareNutrition(meal.id, 0, {
           name: meal.name, portion: meal.portion, kcal: null, protein: null, fibre: null,
           carbs: null, fat: null, inputType: 'text', photoUri: null,
         }, meal.createdAt);
         this.db.execSync('PRAGMA user_version = 2;');
       });
+    }
+    if (version < 3) {
+      this.db.withTransactionSync(() => this.db.execSync(`
+        ALTER TABLE meals ADD COLUMN log_state TEXT NOT NULL DEFAULT 'saved' CHECK (log_state IN ('draft', 'saved', 'discarded'));
+        PRAGMA user_version = 3;
+      `));
     }
   }
 
@@ -166,31 +172,64 @@ export class LoggingRepository {
   }
 
   getMeals(day: string): SavedMeal[] {
-    return this.db.getAllSync<MealRecord>(`SELECT ${columns} ${mealFrom} WHERE m.logged_date = ? ORDER BY m.created_at, m.rowid`, day).map(toMeal);
+    return this.db.getAllSync<MealRecord>(`SELECT ${columns} ${mealFrom} WHERE m.logged_date = ? AND m.log_state = 'saved' ORDER BY m.created_at, m.rowid`, day).map(toMeal);
   }
 
   getMealDays(): string[] {
-    return this.db.getAllSync<{ day: string }>('SELECT DISTINCT logged_date AS day FROM meals ORDER BY logged_date DESC').map((row) => row.day);
+    return this.db.getAllSync<{ day: string }>("SELECT DISTINCT logged_date AS day FROM meals WHERE log_state = 'saved' ORDER BY logged_date DESC").map((row) => row.day);
   }
 
   getExportData(): ExportData {
     let data: ExportData = { profile: null, meals: [] };
     this.db.withTransactionSync(() => {
-      data = { profile: this.getProfile(), meals: this.db.getAllSync<MealRecord>(`SELECT ${columns} ${mealFrom} ORDER BY m.logged_date, m.created_at, m.rowid`).map(toMeal) };
+      const drafts = this.getPhotoDrafts();
+      data = { profile: this.getProfile(), meals: this.db.getAllSync<MealRecord>(`SELECT ${columns} ${mealFrom} WHERE m.log_state = 'saved' ORDER BY m.logged_date, m.created_at, m.rowid`).map(toMeal),
+        ...(drafts.length ? { drafts } : {}) };
     });
     return data;
   }
 
+  getPhotoDrafts(): SavedMeal[] {
+    return this.db.getAllSync<MealRecord>(`SELECT ${columns} ${mealFrom} WHERE m.log_state = 'draft' ORDER BY m.created_at DESC, m.rowid DESC`).map(toMeal);
+  }
+
+  addPhotoDraft(input: MealInput, date = new Date()): SavedMeal {
+    if (input.inputType !== 'photo') throw new Error('A photo is required for this draft.');
+    return this.insertMeal(input, date, 'draft');
+  }
+
+  savePhotoDraft(id: string, date = new Date()): SavedMeal {
+    this.db.withTransactionSync(() => {
+      const meal = this.getMeal(id);
+      if (meal.logState === 'discarded') throw new Error('This draft was discarded.');
+      if (meal.logState === 'draft') this.db.runSync("UPDATE meals SET log_state = 'saved', updated_at = ? WHERE id = ?", date.toISOString(), id);
+    });
+    return this.getMeal(id);
+  }
+
+  discardPhotoDraft(id: string, date = new Date()) {
+    this.db.withTransactionSync(() => {
+      const meal = this.getMeal(id);
+      if (meal.logState !== 'draft') throw new Error('Only an unsaved draft can be discarded.');
+      this.db.runSync("UPDATE meals SET log_state = 'discarded', photo_uri = NULL, revision = revision + 1, updated_at = ? WHERE id = ?", date.toISOString(), id);
+      this.db.runSync("UPDATE nutrition_jobs SET state = 'cancelled', lease_token = NULL, lease_until = NULL, updated_at = ? WHERE meal_id = ? AND state IN ('queued', 'running', 'failed')", date.toISOString(), id);
+    });
+  }
+
   addMeal(input: MealInput, date = new Date()): SavedMeal {
+    return this.insertMeal(input, date, 'saved');
+  }
+
+  private insertMeal(input: MealInput, date: Date, logState: 'draft' | 'saved'): SavedMeal {
     const meal = validateMealInput(input);
     const id = this.newId();
     const timestamp = date.toISOString();
     let saved: SavedMeal;
     this.db.withTransactionSync(() => {
       this.db.runSync(
-        'INSERT INTO meals (id, name, portion, kcal, protein, fibre, carbs, fat, nutrition_status, logged_date, created_at, updated_at, input_type, photo_uri) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO meals (id, name, portion, kcal, protein, fibre, carbs, fat, nutrition_status, logged_date, created_at, updated_at, input_type, photo_uri, log_state) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         id, meal.name, meal.portion, meal.kcal, meal.protein, meal.fibre, meal.carbs, meal.fat,
-        meal.kcal === null ? 'pending' : 'manual', localDateKey(date), timestamp, timestamp, meal.inputType, meal.photoUri,
+        meal.kcal === null ? 'pending' : 'manual', localDateKey(date), timestamp, timestamp, meal.inputType, meal.photoUri, logState,
       );
       this.prepareNutrition(id, 0, meal, timestamp);
       saved = this.getMeal(id);
@@ -202,8 +241,16 @@ export class LoggingRepository {
     let saved: SavedMeal;
     this.db.withTransactionSync(() => {
       const existing = this.getMeal(id);
+      if (existing.logState === 'discarded') throw new Error('This draft was discarded.');
       const meal = validateMealInput({ ...input, inputType: input.inputType ?? existing.inputType,
         photoUri: input.photoUri === undefined ? existing.photoUri : input.photoUri });
+      const unchangedNutrition = existing.nutritionStatus === 'estimated'
+        ? [meal.kcal, meal.protein, meal.carbs, meal.fat, meal.fibre].every((value) => value === null)
+        : (['kcal', 'protein', 'carbs', 'fat', 'fibre'] as const).every((key) => meal[key] === existing[key]);
+      if (unchangedNutrition && meal.name === existing.name && meal.portion === existing.portion && meal.inputType === existing.inputType && meal.photoUri === existing.photoUri) {
+        saved = existing;
+        return;
+      }
       const revision = existing.revision + 1;
       const timestamp = date.toISOString();
       this.db.runSync(
@@ -243,7 +290,7 @@ export class LoggingRepository {
           ORDER BY created_at, rowid LIMIT 1`, timestamp, timestamp, ...inputTypes);
         if (!record) return;
         const meal = this.getMeal(record.mealId);
-        if (meal.revision !== record.revision || meal.nutritionStatus === 'manual') {
+        if (meal.logState === 'discarded' || meal.revision !== record.revision || meal.nutritionStatus === 'manual') {
           this.db.runSync("UPDATE nutrition_jobs SET state = 'cancelled', lease_token = NULL, lease_until = NULL, updated_at = ? WHERE id = ?", timestamp, record.id);
           continue;
         }
@@ -266,7 +313,7 @@ export class LoggingRepository {
       const job = this.db.getFirstSync<JobRecord>(`SELECT ${jobColumns} FROM nutrition_jobs WHERE id = ? AND state = 'running' AND lease_token = ?`, id, leaseToken);
       if (!job) return;
       const meal = this.getMeal(job.mealId);
-      if (meal.revision !== job.revision || meal.nutritionStatus === 'manual') return;
+      if (meal.logState === 'discarded' || meal.revision !== job.revision || meal.nutritionStatus === 'manual') return;
       this.finishNutrition(job, estimate, date.toISOString());
       if (job.cacheKey) this.db.runSync('INSERT INTO nutrition_cache (cache_key, payload, updated_at) VALUES (?, ?, ?) ON CONFLICT(cache_key) DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at', job.cacheKey, JSON.stringify(estimate), date.toISOString());
       applied = true;

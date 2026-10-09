@@ -35,7 +35,7 @@ export function validateMealInput(input: MealInput) {
 }
 
 export function sumNutrition(meals: SavedMeal[]) {
-  return meals.reduce(
+  return meals.filter((meal) => !meal.logState || meal.logState === 'saved').reduce(
     (sum, meal) => ({
       kcal: sum.kcal + (meal.kcal ?? 0),
       protein: sum.protein + (meal.protein ?? 0),

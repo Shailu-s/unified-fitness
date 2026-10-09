@@ -43,7 +43,7 @@ test('version-one migration preserves legacy profile, IDs, dates and manual valu
   try {
     repository.initialize();
     repository.initialize();
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 2);
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 3);
     assert.deepEqual(repository.getProfile(), profile);
     const [manual, pending] = repository.getMeals('2026-10-04');
     assert.equal(manual.id, 'legacy-manual');
@@ -78,7 +78,7 @@ test('nutrition migration rollback preserves legacy data and can be safely retri
     assert.equal(db.prepare('PRAGMA table_info(meals)').all().some((column) => column.name === 'carbs'), false);
     assert.equal(db.prepare('SELECT data FROM profile').get().data, JSON.stringify(profile));
     repository.initialize();
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 2);
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 3);
     assert.deepEqual(repository.getProfile(), profile);
   } finally { db.close(); }
 });

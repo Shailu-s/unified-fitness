@@ -6,6 +6,7 @@ import { MealEditor } from '../components/MealEditor';
 import { colors, fonts, gutter } from '../theme';
 import { num } from '../lib/format';
 import { removeLocalPhoto } from '../lib/photoFiles';
+import { PrimaryButton } from '../components/ui';
 
 const errors: Record<string, string> = {
   not_food: 'Food was not clearly visible. Add a food description or take a clearer photo; no calories were invented.',
@@ -17,13 +18,28 @@ const errors: Record<string, string> = {
 };
 
 export function MealResultScreen({ id, onClose }: { id: string; onClose: () => void }) {
-  const { getMeal, retryEstimate, removePhoto, updateMeal, photosEnabled } = useApp();
+  const { getMeal, retryEstimate, removePhoto, updateMeal, savePhotoDraft, discardPhotoDraft, photosEnabled } = useApp();
   const meal = getMeal(id);
   const insets = useSafeAreaInsets();
   const [editing, setEditing] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const pending = meal.nutritionStatus === 'pending';
   const waitingSetup = meal.inputType === 'photo' && !photosEnabled;
+  const isDraft = meal.logState === 'draft';
+  const save = () => {
+    try { savePhotoDraft(id); onClose(); }
+    catch { setLocalError('Could not save the meal. Your draft is safe; check device storage and retry.'); }
+  };
+  const discard = () => Alert.alert('Discard this photo draft?', 'The draft and its local photo will be removed. Nothing will be added to your daily totals.', [
+    { text: 'Keep draft', style: 'cancel' }, { text: 'Discard draft', style: 'destructive', onPress: () => {
+      try { discardPhotoDraft(id); }
+      catch { setLocalError('Could not discard the draft. Check device storage and retry.'); return; }
+      try { if (meal.photoUri) removeLocalPhoto(meal.photoUri); }
+      catch { Alert.alert('Draft discarded', 'The local photo could not be removed from device storage.'); }
+      onClose();
+    } },
+  ]);
+  if (meal.logState === 'discarded') return null;
   const remove = () => Alert.alert('Remove this photo?', 'Nutrition and meal details stay. The saved photo on this device will be removed.', [
     { text: 'Cancel', style: 'cancel' }, { text: 'Remove photo', style: 'destructive', onPress: () => {
       try { const uri = meal.photoUri; removePhoto(id); if (uri) removeLocalPhoto(uri); }
@@ -34,18 +50,19 @@ export function MealResultScreen({ id, onClose }: { id: string; onClose: () => v
     <Modal visible animationType="slide" onRequestClose={onClose}>
       <View style={[s.root, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 }]}>
         <View style={s.header}>
-          <Text style={s.title}>Your meal</Text>
-          <Pressable onPress={onClose} accessibilityRole="button"><Text style={s.action}>Done</Text></Pressable>
+          <Text style={s.title}>{isDraft ? 'Review your meal' : 'Your meal'}</Text>
+          <Pressable onPress={onClose} accessibilityRole="button"><Text style={s.action}>{isDraft ? 'Later' : 'Done'}</Text></Pressable>
         </View>
         <ScrollView contentContainerStyle={s.body}>
           {meal.photoUri && <Image source={{ uri: meal.photoUri }} style={s.image} accessibilityLabel="Saved meal photo" />}
           <Text style={s.name}>{meal.name}</Text>
           <Text style={s.help}>{meal.portion}</Text>
+          {isDraft && <Text style={s.help}>Draft saved on your phone · not included in daily totals until you tap Save meal.</Text>}
           {pending ? (
             <View style={s.status}>
               {meal.estimateState !== 'failed' && !waitingSetup && <ActivityIndicator size="large" color={colors.protein} />}
               <Text accessibilityRole={meal.estimateState === 'failed' ? 'alert' : undefined} style={s.statusText}>
-                {waitingSetup ? 'Photo saved. Photo backend activation is pending.' : meal.estimateState === 'failed' ? errors[meal.estimateError ?? 'network'] ?? errors.network :
+                {waitingSetup ? 'Photo saved on your phone. Photo backend activation is pending.' : meal.estimateState === 'failed' ? errors[meal.estimateError ?? 'network'] ?? errors.network :
                   meal.estimateError === 'network' ? 'Still working — retrying when connected.' : meal.estimateState === 'running' ? 'Estimating your meal…' : 'Saved on your phone. Waiting to estimate…'}
               </Text>
               <Text style={s.help}>You can leave this screen. Logging never waits for the network.</Text>
@@ -75,6 +92,10 @@ export function MealResultScreen({ id, onClose }: { id: string; onClose: () => v
           {meal.photoUri && <Pressable onPress={remove} accessibilityRole="button" style={s.button}><Text style={s.action}>Remove local photo</Text></Pressable>}
           {localError && <Text accessibilityRole="alert" style={s.help}>{localError}</Text>}
         </ScrollView>
+        {isDraft && <View style={s.footer}>
+          <PrimaryButton label={pending ? 'Save meal without waiting' : 'Save meal'} onPress={save} />
+          <Pressable onPress={discard} accessibilityRole="button" style={s.discard}><Text style={s.action}>Discard draft</Text></Pressable>
+        </View>}
       </View>
       {editing && <MealEditor meal={meal} onClose={() => setEditing(false)} onSave={(input) => updateMeal(id, input)} />}
     </Modal>
@@ -103,4 +124,6 @@ const s = StyleSheet.create({
   status: { gap: 14, paddingVertical: 30, alignItems: 'center' },
   statusText: { fontFamily: fonts.uiMedium, fontSize: 16, color: colors.ink, textAlign: 'center' },
   button: { paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.rule },
+  footer: { paddingHorizontal: gutter, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.rule },
+  discard: { paddingVertical: 16, alignItems: 'center' },
 });

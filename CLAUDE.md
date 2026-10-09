@@ -97,7 +97,8 @@ data. iPhone Expo Go reopen persistence passed per founder; native history/shari
 and full offline cold-start verification are pending. GPS, health integration,
 sync and billing are not built. Live text nutrition is now enabled for founder
 testing. Nutrition foundation now uses
-additive SQLite schema v2: full macro fields, text/photo metadata, revisions,
+additive SQLite schema v3: durable review-before-save photo drafts excluded from
+daily totals/history until explicit Save, plus full macro fields, text/photo metadata, revisions,
 durable jobs with leases/retries, local cache and late-result/correction protection.
 Supabase backend schema/private bucket and authenticated nutrition-estimate v1
 are deployed, ACTIVE with JWT verification; hosted RLS/privilege/unauthenticated
@@ -109,8 +110,13 @@ Mobile dev-only override enables foreground processing; production defaults stay
 off. Do not raise/renew budget without approval. Actual phone correction/offline/
 reopen, Android and broader meal accuracy remain unverified. Photo capture/private
 upload/vision/result-screen code is implemented on the feature branch, with
-production photo inference gated off until review/deployment. Native photo QA and
-reference-meal evaluation remain required.
+production photo inference gated off until review/deployment. Founder-approved isolated
+nutrition-photo-preview is deployed and enabled with JWT verification and a separate
+preview flag; development client targets it on port 8084. October budget verified
+unchanged at $1 limit/$0.04 reserved; validation checks made no new inference calls.
+80 automated tests/typechecks/bundles pass; Expo compatibility checker recommends
+October 6 patches retained pending seven-day age/review. Native photo QA, actual
+food-image inference and reference-meal evaluation remain required.
 Never dump or commit dotenv values; mobile configuration may contain only public
 Supabase URL/publishable key, never service-role/model secrets. OpenAI is the
 selected inference provider; backend-only OPENAI_API_KEY, pinned initial model
