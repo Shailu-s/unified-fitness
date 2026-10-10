@@ -313,11 +313,16 @@ export class LoggingRepository {
     return this.getVoiceJob(id);
   }
 
-  queueVoiceRecording(id: string, durationMs: number, date = new Date()) {
+  queueVoiceRecording(id: string, durationMs: number, date = new Date(), audioUri?: string) {
     if (!Number.isFinite(durationMs) || durationMs < 250 || durationMs > 32000) throw new Error('Record for up to 30 seconds.');
     const job = this.getVoiceJob(id);
-    if (job.state !== 'recording' || !job.audioUri) throw new Error('Recording is not active.');
-    this.db.runSync("UPDATE voice_jobs SET state = 'queued', duration_ms = ?, updated_at = ? WHERE id = ? AND state = 'recording'", durationMs, date.toISOString(), id);
+    if (!['recording','failed'].includes(job.state) || !job.audioUri) throw new Error('Recording is not available.');
+    if (audioUri !== undefined && (!audioUri.startsWith('file:///') || !audioUri.endsWith('.m4a'))) throw new Error('Use a local recording.');
+    this.db.runSync("UPDATE voice_jobs SET state = 'queued', audio_uri = ?, duration_ms = ?, attempts = 0, error_code = NULL, next_attempt_at = ?, updated_at = ? WHERE id = ? AND state IN ('recording','failed')", audioUri ?? job.audioUri, durationMs, date.toISOString(), date.toISOString(), id);
+  }
+
+  failVoiceFinalization(id: string) {
+    this.db.runSync("UPDATE voice_jobs SET state = 'failed', error_code = 'finalize_failed', updated_at = ? WHERE id = ? AND state = 'recording'", new Date().toISOString(), id);
   }
 
   interruptVoiceRecording(id: string) {

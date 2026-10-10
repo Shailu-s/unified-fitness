@@ -9,6 +9,11 @@
       "cameraPermission": "Allow Unified Fitness to photograph your meals.",
       "photosPermission": "Allow Unified Fitness to choose a meal photo.",
       "microphonePermission": "Allow Unified Fitness to record a spoken meal."
+    }], ["expo-camera", {
+      "cameraPermission": "Allow Unified Fitness to photograph your meals.",
+      "microphonePermission": false,
+      "recordAudioAndroid": false,
+      "barcodeScannerEnabled": false
     }], ["expo-audio", {
       "microphonePermission": "Allow Unified Fitness to record a spoken meal.",
       "recordAudioAndroid": true,

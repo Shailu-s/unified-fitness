@@ -117,17 +117,23 @@ unchanged at $1 limit/$0.04 reserved; validation checks made no new inference ca
 Founder photo preparation failure reproduced at native hashing boundary and fixed
 by passing Uint8Array rather than ArrayBuffer. Founder now requests minimal photo UI:
 photo with bottom translucent macro overlay; short Edit/Remove/Save actions; no visible
-quantity/portion/assumption prompts. Camera icon offers native Camera/Gallery choices.
+quantity/portion/assumption prompts. Camera icon now opens a direct expo-camera live view with bottom-right Gallery,
+not a chooser. Photo preparation/privacy/durable draft pipeline is shared.
 Online voice is now implemented on feat/voice-nutrition: type left/camera centre/voice right,
 30-second foreground document recording → private editable transcript → same text
 nutrition draft/cache → Save. Founder approved pinned gpt-4o-mini-transcribe-2025-12-15
 and private audio inside the existing $1 cap; isolated voice-transcribe-preview is
 ACTIVE with JWT verification. Voice reserves $0.04 per uncached transcription from
 the same ledger, never a new budget. Two synthetic live runs/cache/cleanup pass but
-transcripts had word errors; real English/Hindi/mixed and native mic remain unverified.
+transcripts had word errors; real English/Hindi/mixed quality and broader mic reliability remain unverified.
 October latest verified ledger is $1 limit/$0.15 reserved, not invoice spend.
-107 automated tests/typechecks/bundles, isolated Postgres and config introspection pass;
-upload/UI/voice phone retest pending. Expo compatibility checker recommends
+Founder iPhone recorder startup failed with custom encoding; SDK HIGH_QUALITY AAC
+preset fixes prepare. Expo Go native audio/experience directory mismatch is fixed
+with narrow native-source validation and project-scoped durable copying. Done replaces
+Stop; duplicate typing on Voice is removed, main typing remains. Founder now reports
+words appear after Done/Retry, not full macro/save/offline/Android or accuracy sign-off.
+114 automated tests/typechecks/bundles pass; camera/gallery/native reliability and
+remaining voice gates pending. No budget increase or extra agent inference in this fix. Expo compatibility checker recommends
 October 6 patches retained pending seven-day age/review. Native photo QA, actual
 food-image inference and reference-meal evaluation remain required.
 Never dump or commit dotenv values; mobile configuration may contain only public

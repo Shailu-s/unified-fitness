@@ -66,7 +66,11 @@ implemented on the feature branch; production photo flags remain off until revie
 Camera and model quality require physical-device testing. Voice now has foreground
 30-second document-backed recording, private online transcription and editable review
 feeding the existing cached text meal draft. Type left, camera centre, voice right.
-Speech quality/microphone/offline interruption behavior still requires phone testing.
+Voice uses the standard native AAC preset and Done to finalize audio. Expo Go native
+clips are validated then copied to project-scoped documents before queueing; failed
+finalization can retry the same clip. Founder reports visible speech text on iPhone;
+accuracy, full save/reopen/offline and Android gates remain pending. Camera opens a
+live picture view directly with Gallery bottom-right; no source chooser.
 Seed/test food data is not inserted into local app logs.
 
 Supabase public config is validated; migration and nutrition-estimate v1 are deployed.

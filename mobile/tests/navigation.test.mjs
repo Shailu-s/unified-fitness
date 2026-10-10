@@ -32,9 +32,10 @@ test('History declares native sheet presentation and swipe-down dismissal', () =
 test('photo capture creates a reviewable draft and the result screen offers explicit Save and Later', () => {
   const log = readFileSync(new URL('../src/screens/LogScreen.tsx', import.meta.url), 'utf8');
   const result = readFileSync(new URL('../src/screens/MealResultScreen.tsx', import.meta.url), 'utf8');
-  assert.match(log, /const meal = addPhotoDraft\(/);
+  const camera = readFileSync(new URL('../src/screens/CameraScreen.tsx', import.meta.url), 'utf8');
+  assert.match(camera, /const meal = addPhotoDraft\(/);
   assert.match(log, />Drafts<\/Text>/);
-  assert.match(log, /snap\('gallery'\)/);
+  assert.match(camera, /pickMealPhoto\('gallery'\)/);
   assert.match(log, /accessibilityLabel="Add photo from camera or gallery"/);
   assert.match(result, /savePhotoDraft\(id\)/);
   assert.match(result, /pending \? 'Save now' : 'Save'/);
@@ -79,18 +80,26 @@ test('voice button opens a recording screen with durable document storage and na
   assert.match(voice, /record\(\{ forDuration: MAX_VOICE_SECONDS \}\)/);
   assert.ok(voice.indexOf('startVoiceRecording(recorder.uri)') < voice.indexOf('recorder.record('));
   assert.match(voice, /Meal transcript/);
+  assert.match(voice, /recording \? 'Done' : 'Record'/);
+  assert.equal(/\bonType\b/.test(voice), false);
+  assert.equal(voice.includes('Meal · or type instead'), false);
   assert.match(voice, /reviewVoiceTranscript\(jobId, text\)/);
   assert.match(voice, /MealResultScreen[^\n]*embedded/);
   assert.match(voice, /value !== 'active'/);
 });
 
-test('camera control opens a camera/gallery chooser with no standalone gallery button', () => {
+test('camera icon opens a live camera directly with gallery on the bottom right', () => {
   const log = readFileSync(new URL('../src/screens/LogScreen.tsx', import.meta.url), 'utf8');
-  assert.match(log, /onPress=\{choosePhoto\}/);
-  assert.match(log, /options: \['Camera', 'Gallery', 'Cancel'\]/);
-  assert.match(log, /cancelButtonIndex: 2/);
-  assert.match(log, /text: 'Gallery', onPress: .*snap\('gallery'\)/);
-  assert.equal(log.includes('galleryButton'), false);
+  const camera = readFileSync(new URL('../src/screens/CameraScreen.tsx', import.meta.url), 'utf8');
+  assert.match(log, /onPress=\{openCamera\}/);
+  assert.equal(log.includes('showActionSheetWithOptions'), false);
+  assert.match(camera, /CameraView ref=\{camera\}/);
+  assert.match(camera, /onCameraReady/);
+  assert.match(camera, /controls: \{[^\n]*position: 'absolute'[^\n]*bottom: 0/);
+  assert.ok(camera.indexOf('style={s.gallery}') > camera.indexOf('accessibilityLabel="Take meal photo"'));
+  assert.match(camera, /photo\('gallery'\)/);
+  assert.match(camera, /prepareMealPhoto\(shot\)/);
+  assert.match(camera, /MealResultScreen[^\n]*embedded/);
 });
 
 test('meal editor keeps editable macros without portion prompts or explanatory paragraphs', () => {

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ActionSheetIOS, ActivityIndicator, Alert, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CameraIcon, MicIcon, TypeIcon } from '../components/Icons';
 import { MacroBar } from '../components/MacroBar';
@@ -11,13 +11,12 @@ import { num } from '../lib/format';
 import { HistoryScreen } from './HistoryScreen';
 import { MealResultScreen } from './MealResultScreen';
 import { VoiceScreen } from './VoiceScreen';
-import { pickMealPhoto, removeLocalPhoto } from '../lib/photoFiles';
-import * as SecureStore from 'expo-secure-store';
+import { CameraScreen } from './CameraScreen';
 import type { SavedMeal } from '../types';
 import { colors, eyebrow, fonts, gutter } from '../theme';
 
 export function LogScreen() {
-  const { targets, meals, photoDrafts, voiceJobs, eaten, addMeal, addPhotoDraft, updateMeal, getExportData } = useApp();
+  const { targets, meals, photoDrafts, voiceJobs, eaten, addMeal, updateMeal, getExportData } = useApp();
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
 
@@ -31,8 +30,7 @@ export function LogScreen() {
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [voiceId, setVoiceId] = useState<string | null>(null);
   const pendingVoice = voiceJobs.filter((job) => !job.mealId);
-  const [preparingPhoto, setPreparingPhoto] = useState(false);
-  const photoBusy = useRef(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
   const exportBusy = useRef(false);
   const performExport = async () => {
     if (exportBusy.current) return;
@@ -62,44 +60,7 @@ export function LogScreen() {
   const heroLabel = empty ? 'Daily protein' : left === 0 ? 'Protein goal reached' : 'Protein left';
 
   // Stand-in for a photo scan. A real one would open an editable draft first.
-  const snap = async (source: 'camera' | 'gallery' = 'camera') => {
-    if (photoBusy.current) return;
-    photoBusy.current = true;
-    try {
-      if (await SecureStore.getItemAsync('photo-processing-consent-v1') !== 'yes') {
-        const accepted = await new Promise<boolean>((resolve) => Alert.alert('Approximate photo estimates',
-          'Food photos are saved privately on this phone, then sent via private storage to OpenAI for an estimate. Avoid faces or personal information. Uploads are removed after processing; interrupted uploads are removed on next sync. OpenAI API training is opt-in, but abuse-monitoring retention may apply. Photos cannot reveal hidden oil or exact portions.',
-          [{ text: 'Cancel', style: 'cancel', onPress: () => resolve(false) }, { text: 'Continue', onPress: () => resolve(true) }],
-          { cancelable: true, onDismiss: () => resolve(false) }));
-        if (!accepted) return;
-        await SecureStore.setItemAsync('photo-processing-consent-v1', 'yes');
-      }
-      setPreparingPhoto(true);
-      const uri = await pickMealPhoto(source);
-      if (!uri) return;
-      try {
-        const meal = addPhotoDraft({ name: '', portion: '', kcal: null, protein: null, fibre: null, inputType: 'photo', photoUri: uri });
-        setResultId(meal.id);
-      } catch (error) { removeLocalPhoto(uri); throw error; }
-    } catch (error) {
-      Alert.alert('Photo not saved', error instanceof Error ? error.message : 'Could not prepare the photo. Try again.',
-        [{ text: 'OK' }, { text: 'Device settings', onPress: () => { void Linking.openSettings(); } }]);
-    } finally { photoBusy.current = false; setPreparingPhoto(false); }
-  };
-  const choosePhoto = () => {
-    if (photoBusy.current) return;
-    if (Platform.OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions({ options: ['Camera', 'Gallery', 'Cancel'], cancelButtonIndex: 2 }, (index) => {
-        if (index === 0 || index === 1) void snap(index === 0 ? 'camera' : 'gallery');
-      });
-    } else {
-      Alert.alert('Photo', undefined, [
-        { text: 'Camera', onPress: () => { void snap('camera'); } },
-        { text: 'Gallery', onPress: () => { void snap('gallery'); } },
-        { text: 'Cancel', style: 'cancel' },
-      ]);
-    }
-  };
+  const openCamera = () => setCameraOpen(true);
   const openVoice = (id: string | null = null) => { setVoiceId(id); setVoiceOpen(true); };
 
   return (
@@ -147,7 +108,7 @@ export function LogScreen() {
               {photoDrafts.map((draft, index) => <MealRow key={draft.id} meal={draft} last={index === photoDrafts.length - 1} onPress={() => setResultId(draft.id)} />)}
               {pendingVoice.map((job) => <Pressable key={job.id} onPress={() => openVoice(job.id)} accessibilityRole="button" style={s.voiceDraft}>
                 <MicIcon color={colors.inkMid} />
-                <Text style={s.actionText}>{job.state === 'ready' ? 'Review voice' : job.state === 'failed' ? 'Voice · retry or type' : 'Voice draft'}</Text>
+                <Text style={s.actionText}>{job.state === 'ready' ? 'Review voice' : job.state === 'failed' ? 'Voice · retry' : 'Voice draft'}</Text>
               </Pressable>)}
             </View>}
             <Text style={s.mealsHead}>Meals</Text>
@@ -174,13 +135,12 @@ export function LogScreen() {
           </Pressable>
 
           <Pressable
-            onPress={choosePhoto}
-            disabled={preparingPhoto}
+            onPress={openCamera}
             accessibilityRole="button"
             accessibilityLabel="Add photo from camera or gallery"
             style={({ pressed }) => [s.shutter, pressed && s.shutterPressed]}
           >
-            {preparingPhoto ? <ActivityIndicator color={colors.paper} /> : <CameraIcon color={colors.paper} />}
+            <CameraIcon color={colors.paper} />
           </Pressable>
 
           <Pressable
@@ -193,7 +153,8 @@ export function LogScreen() {
           </Pressable>
         </View>
       </View>
-      {voiceOpen && <VoiceScreen id={voiceId} onClose={() => setVoiceOpen(false)} onType={() => { setVoiceOpen(false); openEditor(); }} />}
+      {cameraOpen && <CameraScreen onClose={() => setCameraOpen(false)} />}
+      {voiceOpen && <VoiceScreen id={voiceId} onClose={() => setVoiceOpen(false)} />}
       {historyOpen && <HistoryScreen onClose={() => setHistoryOpen(false)} />}
       {resultId && !editorOpen && <MealResultScreen id={resultId} onClose={() => setResultId(null)} />}
       {editorOpen && (

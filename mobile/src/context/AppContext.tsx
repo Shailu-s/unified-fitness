@@ -21,8 +21,9 @@ interface AppState {
   voicesEnabled: boolean;
   getVoiceJob: (id: string) => VoiceJob;
   startVoiceRecording: (uri: string) => VoiceJob;
-  queueVoiceRecording: (id: string, durationMs: number) => void;
+  queueVoiceRecording: (id: string, durationMs: number, audioUri?: string) => void;
   interruptVoiceRecording: (id: string) => void;
+  failVoiceFinalization: (id: string) => void;
   reviewVoiceTranscript: (id: string, text: string) => SavedMeal;
   retryVoiceJob: (id: string) => void;
   discardVoiceJob: (id: string) => void;
@@ -212,8 +213,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [requireRepository, refreshMeals]);
   const getVoiceJob = useCallback((id: string) => requireRepository().getVoiceJob(id), [requireRepository]);
   const startVoiceRecording = useCallback((uri: string) => { const job = requireRepository().startVoiceRecording(uri); refreshMeals(true); return job; }, [requireRepository, refreshMeals]);
-  const queueVoiceRecording = useCallback((id: string, durationMs: number) => { requireRepository().queueVoiceRecording(id, durationMs); refreshMeals(true); kickVoice(); }, [requireRepository, refreshMeals, kickVoice]);
+  const queueVoiceRecording = useCallback((id: string, durationMs: number, audioUri?: string) => { requireRepository().queueVoiceRecording(id, durationMs, new Date(), audioUri); refreshMeals(true); kickVoice(); }, [requireRepository, refreshMeals, kickVoice]);
   const interruptVoiceRecording = useCallback((id: string) => { requireRepository().interruptVoiceRecording(id); refreshMeals(true); }, [requireRepository, refreshMeals]);
+  const failVoiceFinalization = useCallback((id: string) => { requireRepository().failVoiceFinalization(id); refreshMeals(true); }, [requireRepository, refreshMeals]);
   const reviewVoiceTranscript = useCallback((id: string, text: string) => { const meal = requireRepository().reviewVoiceTranscript(id, text); cleanupVoice(); refreshMeals(true); kickEstimates(); return meal; }, [requireRepository, cleanupVoice, refreshMeals, kickEstimates]);
   const retryVoiceJob = useCallback((id: string) => { requireRepository().retryVoiceJob(id); refreshMeals(true); kickVoice(); }, [requireRepository, refreshMeals, kickVoice]);
   const discardVoiceJob = useCallback((id: string) => { requireRepository().discardVoiceJob(id); cleanupVoice(); refreshMeals(true); }, [requireRepository, cleanupVoice, refreshMeals]);
@@ -226,7 +228,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const value: AppState = {
     profile, targets, meals, photoDrafts, addPhotoDraft, savePhotoDraft, discardPhotoDraft, eaten, activity: mockActivity, ready, storageError, retryStorage,
-    voiceJobs, voicesEnabled, getVoiceJob, startVoiceRecording, queueVoiceRecording, interruptVoiceRecording, reviewVoiceTranscript, retryVoiceJob, discardVoiceJob,
+    voiceJobs, voicesEnabled, getVoiceJob, startVoiceRecording, queueVoiceRecording, interruptVoiceRecording, failVoiceFinalization, reviewVoiceTranscript, retryVoiceJob, discardVoiceJob,
     completeOnboarding, addMeal, updateMeal, getMealsForDay, getMealDays, getExportData, estimatesEnabled, getMeal, retryEstimate, removePhoto, photosEnabled,
   };
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -96,6 +96,17 @@ test('native upload digest covers the sanitized JPEG bytes, identical to the ser
   assert.equal(photo.sha256, createHash('sha256').update(photo.bytes).digest('hex'));
 });
 
+test('direct CameraView pictures use the same sanitized durable photo upload pipeline', async () => {
+  const { photoFiles, events } = setup();
+  const uri = await photoFiles.prepareMealPhoto({ uri: 'file:///cache/camera-view.jpg', width: 640, height: 480 });
+  assert.equal(uri, `${root}/${uuid}.jpg`);
+  const photo = await photoFiles.photoUploadData(uri);
+  assert.equal(new TextDecoder().decode(photo.bytes).includes('Exif'), false);
+  assert.equal(photo.sha256, createHash('sha256').update(photo.bytes).digest('hex'));
+  assert.equal(events.includes('camera'), false);
+  assert.equal(events.includes('gallery'), false);
+});
+
 test('concurrent voice/nutrition session requests create only one guest identity', async () => {
   let signedIn = false;
   let calls = 0;

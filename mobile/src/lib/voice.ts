@@ -6,13 +6,32 @@ export const MAX_VOICE_BYTES = 1000000;
 export const VOICE_RESERVATION_USD = 0.04;
 
 export function validateTranscript(value: unknown): string {
-  if (typeof value !== 'string' || !value.trim() || value.trim().length > 500) throw new Error('No clear short transcript. Try again or type.');
+  if (typeof value !== 'string' || !value.trim() || value.trim().length > 500) throw new Error('No clear short transcript. Try again.');
   return value.trim();
 }
 
+function localRecordingPath(uri: string) {
+  if (!uri.startsWith('file:///') || /[?#]/.test(uri)) throw new Error('Recording is not an owned audio file.');
+  const path = decodeURIComponent(uri).replace(/^file:\/\/\/private\/var\//, 'file:///var/');
+  if (path.split('/').some((segment) => segment === '.' || segment === '..')) throw new Error('Recording is not an owned audio file.');
+  return path;
+}
+
 export function validateRecordingUri(uri: string, root: string) {
-  const prefix = `${root.replace(/\/+$/, '')}/`;
-  if (!uri.startsWith(prefix) || !/^(?:[a-zA-Z0-9_-]+\/)*[a-zA-Z0-9_-]+\.m4a$/.test(uri.slice(prefix.length))) throw new Error('Recording is not an owned audio file.');
+  const path = localRecordingPath(uri);
+  const prefix = `${localRecordingPath(root).replace(/\/+$/, '')}/`;
+  if (!path.startsWith(prefix) || !/^(?:[a-zA-Z0-9_-]+\/)*[a-zA-Z0-9_-]+\.m4a$/.test(path.slice(prefix.length))) throw new Error('Recording is not an owned audio file.');
+}
+
+export function validateNativeRecordingUri(uri: string, document: string) {
+  try { validateRecordingUri(uri, document); return; } catch {}
+  const root = localRecordingPath(document);
+  const container = root.match(/^(file:\/\/\/[^?#]+\/(?:Documents|files))\/(?:ExponentExperienceData|ExperienceData)\//)?.[1];
+  const path = localRecordingPath(uri);
+  const nativeRoot = container ? `${container}/ExpoAudio/` : '';
+  if (!nativeRoot || !path.startsWith(nativeRoot) || !/^recording-[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}\.m4a$/.test(path.slice(nativeRoot.length))) {
+    throw new Error('Recording is not an owned audio file.');
+  }
 }
 
 export function voiceObjectPath(owner: string, id: string) {

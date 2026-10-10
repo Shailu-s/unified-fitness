@@ -22,7 +22,7 @@ function load(path, dependencies, globals = {}) {
 const owner = '00000000-0000-4000-8000-000000000001';
 const uri = 'file:///documents/ExpoAudio/recording-ABCDEF01-2345-6789-ABCD-EF0123456789.m4a';
 
-function setup(authError = null) {
+function setup(authError = null, recordUri = uri, documentRoot = 'file:///documents') {
   const bytes = audioFixture();
   const types = load('../node_modules/expo-crypto/src/Crypto.types.ts', {});
   const crypto = load('../node_modules/expo-crypto/src/Crypto.ts', {
@@ -33,13 +33,21 @@ function setup(authError = null) {
       },
     },
   });
-  class File {
-    constructor(path) { this.uri = path; }
-    get exists() { return this.uri === uri; }
-    get size() { return bytes.length; }
-    async bytes() { return bytes; }
+  const saved = new Map([[recordUri, bytes]]);
+  class Directory {
+    constructor(root, name) { this.uri = `${root.uri.replace(/\/$/, '')}/${name}`; }
+    create() {}
   }
-  const files = load('../src/lib/voiceFiles.ts', { 'expo-file-system': { File, Paths: { document: { uri: 'file:///documents' } } }, 'expo-crypto': crypto, './voice': voice });
+  class File {
+    constructor(path, name) { this.uri = name ? `${path.uri}/${name}` : path; }
+    get exists() { return saved.has(this.uri); }
+    get size() { return saved.get(this.uri)?.length ?? 0; }
+    async bytes() { assert.ok(this.exists); return saved.get(this.uri); }
+    create() { saved.set(this.uri, new Uint8Array()); }
+    write(data) { saved.set(this.uri, data); }
+    delete() { saved.delete(this.uri); }
+  }
+  const files = load('../src/lib/voiceFiles.ts', { 'expo-file-system': { Directory, File, Paths: { document: { uri: documentRoot }, cache: { uri: 'file:///cache' } } }, 'expo-crypto': crypto, './voice': voice });
   const uploads = [];
   const handler = createVoiceHandler({ authenticate: async () => owner, claim: async () => ({ state: 'claimed', leaseToken: 'lease' }),
     load: async () => uploads.at(-1), transcribe: async () => '2 roti dal', finish: async () => true, fail: async () => {}, remove: async () => {} });
@@ -74,6 +82,18 @@ test('actual native audio bytes, upload, handler and worker preserve the transcr
     assert.equal(meal.logState, 'draft');
     assert.equal(repository.getNutritionJobs().length, 1);
   } finally { db.close(); }
+});
+
+test('Expo Go native audio outside the experience directory is validated and durably copied into the project', async () => {
+  const documents = 'file:///var/mobile/Containers/Data/Application/TEST/Documents/ExperienceData/%40anonymous%2Funi-fit/';
+  const recording = 'file:///var/mobile/Containers/Data/Application/TEST/Documents/ExpoAudio/recording-ABCDEF01-2345-6789-ABCD-EF0123456789.m4a';
+  const { files } = setup(null, recording, documents);
+  const data = await files.voiceAudioData(recording);
+  assert.equal(data.durationMs, 2000);
+  const copy = await files.persistVoiceAudio('a'.repeat(32), recording);
+  assert.equal(copy.uri, `${documents}voice-recordings/${'a'.repeat(32)}.m4a`);
+  assert.equal(copy.sha256, data.sha256);
+  assert.equal((await files.voiceAudioData(copy.uri)).durationMs, 2000);
 });
 
 test('retryable auth failures remain offline voice retries instead of permanent setup errors', async () => {

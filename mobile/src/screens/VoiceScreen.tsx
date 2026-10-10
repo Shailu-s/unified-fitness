@@ -6,22 +6,24 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useApp } from '../context/AppContext';
 import { PrimaryButton } from '../components/ui';
 import { MealResultScreen } from './MealResultScreen';
-import { voiceAudioData, removeVoiceAudio } from '../lib/voiceFiles';
+import { persistVoiceAudio, removeVoiceAudio } from '../lib/voiceFiles';
 import { MAX_VOICE_SECONDS } from '../lib/voice';
+import { captureDiagnostic } from '../lib/captureDiagnostics';
 import { colors, fonts, gutter } from '../theme';
 
-const options = { ...RecordingPresets.HIGH_QUALITY, directory: 'document' as const, sampleRate: 16000, numberOfChannels: 1, bitRate: 64000 };
+const options = { ...RecordingPresets.HIGH_QUALITY, directory: 'document' as const };
 const errors: Record<string, string> = {
-  interrupted: 'Recording interrupted. Type or record again.',
+  interrupted: 'Recording interrupted. Retry.',
+  finalize_failed: 'Could not finish clip. Retry.',
   network: 'Offline · retrying',
-  invalid_result: 'No clear transcript. Retry or type.',
-  audio_invalid: 'Recording unavailable. Type instead.',
-  budget_exceeded: 'Estimate limit reached. Type instead.',
-  backend_not_configured: 'Transcription unavailable. Type instead.',
+  invalid_result: 'No clear transcript. Retry.',
+  audio_invalid: 'Recording unavailable. Retry.',
+  budget_exceeded: 'Transcript limit reached.',
+  backend_not_configured: 'Transcription unavailable. Retry later.',
 };
 
-export function VoiceScreen({ id, onClose, onType }: { id: string | null; onClose: () => void; onType: () => void }) {
-  const { getVoiceJob, startVoiceRecording, queueVoiceRecording, interruptVoiceRecording, reviewVoiceTranscript, retryVoiceJob, discardVoiceJob, voicesEnabled } = useApp();
+export function VoiceScreen({ id, onClose }: { id: string | null; onClose: () => void }) {
+  const { getVoiceJob, startVoiceRecording, queueVoiceRecording, interruptVoiceRecording, failVoiceFinalization, reviewVoiceTranscript, retryVoiceJob, discardVoiceJob, voicesEnabled } = useApp();
   const [jobId, setJobId] = useState(id);
   const [text, setText] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -52,21 +54,26 @@ export function VoiceScreen({ id, onClose, onType }: { id: string | null; onClos
     recordingId.current = null;
     locked.current = true;
     if (alive.current) setBusy(true);
+    let stage = 'stop';
     try {
       await recorder.stop();
+      stage = 'read-audio';
       const saved = getVoiceJob(current);
       if (!saved.audioUri) throw new Error('Recording unavailable.');
-      const audio = await voiceAudioData(saved.audioUri);
-      queueVoiceRecording(current, audio.durationMs);
-    } catch {
-      interruptVoiceRecording(current);
-      if (alive.current) setError('Recording unavailable. Type or record again.');
+      const audio = await persistVoiceAudio(current, saved.audioUri);
+      stage = 'queue';
+      queueVoiceRecording(current, audio.durationMs, audio.uri);
+      if (audio.cleanupNative) { try { removeVoiceAudio(saved.audioUri); } catch {} }
+    } catch (failure) {
+      failVoiceFinalization(current);
+      const diagnostic = captureDiagnostic(stage, failure);
+      if (alive.current) setError(`Recording unavailable (${diagnostic.stage}). Retry.`);
     } finally {
       await setAudioModeAsync({ allowsRecording: false }).catch(() => {});
       locked.current = false;
       if (alive.current) setBusy(false);
     }
-  }, [recorder, getVoiceJob, queueVoiceRecording, interruptVoiceRecording]);
+  }, [recorder, getVoiceJob, queueVoiceRecording, failVoiceFinalization]);
   finishRef.current = finish;
 
   useEffect(() => {
@@ -86,6 +93,7 @@ export function VoiceScreen({ id, onClose, onType }: { id: string | null; onClos
     setBusy(true); setError(null);
     let preparedUri: string | null = null;
     let createdId: string | null = null;
+    let stage = 'consent';
     try {
       if (await SecureStore.getItemAsync('voice-processing-consent-v1') !== 'yes') {
         const accepted = await new Promise<boolean>((resolve) => Alert.alert('Voice transcription',
@@ -94,27 +102,50 @@ export function VoiceScreen({ id, onClose, onType }: { id: string | null; onClos
         if (!accepted) return;
         await SecureStore.setItemAsync('voice-processing-consent-v1', 'yes');
       }
+      stage = 'permission';
       const permission = await AudioModule.requestRecordingPermissionsAsync();
       if (!permission.granted) { setDenied(true); setError('Microphone access denied.'); return; }
       setDenied(false);
       if (!alive.current || AppState.currentState !== 'active') return;
+      stage = 'audio-session';
       await setAudioModeAsync({ playsInSilentMode: true, allowsRecording: true, shouldPlayInBackground: false });
+      stage = 'prepare';
       await recorder.prepareToRecordAsync(options);
+      stage = 'recording-uri';
       if (!recorder.uri) throw new Error('Recording unavailable.');
       preparedUri = recorder.uri;
       if (!alive.current || AppState.currentState !== 'active') throw new Error('Recording cancelled.');
+      stage = 'local-session';
       const saved = startVoiceRecording(recorder.uri);
       createdId = saved.id;
       recordingId.current = saved.id;
       setJobId(saved.id);
       dirty.current = false; setText('');
+      stage = 'record-start';
       recorder.record({ forDuration: MAX_VOICE_SECONDS });
-    } catch {
+    } catch (failure) {
       if (createdId) { interruptVoiceRecording(createdId); recordingId.current = null; }
       await recorder.stop().catch(() => {});
       if (!createdId && preparedUri) { try { removeVoiceAudio(preparedUri); } catch {} }
       await setAudioModeAsync({ allowsRecording: false }).catch(() => {});
-      if (alive.current) setError('Recording unavailable. Try again or type.');
+      const diagnostic = captureDiagnostic(stage, failure);
+      if (alive.current) setError(`Recording unavailable (${diagnostic.stage}). Retry.`);
+    } finally { locked.current = false; if (alive.current) setBusy(false); }
+  };
+  const retry = async () => {
+    if (!jobId || locked.current) return;
+    const saved = getVoiceJob(jobId);
+    if (saved.durationMs !== null) { retryVoiceJob(jobId); return; }
+    if (!saved.audioUri) return;
+    locked.current = true; setBusy(true); setError(null);
+    try {
+      const audio = await persistVoiceAudio(jobId, saved.audioUri);
+      queueVoiceRecording(jobId, audio.durationMs, audio.uri);
+      if (audio.cleanupNative) { try { removeVoiceAudio(saved.audioUri); } catch {} }
+    }
+    catch (failure) {
+      const diagnostic = captureDiagnostic('recover-audio', failure);
+      setError(`Clip unavailable (${diagnostic.stage}). Retry.`);
     } finally { locked.current = false; if (alive.current) setBusy(false); }
   };
   const close = async () => { if (locked.current) return; await finish(); onClose(); };
@@ -139,19 +170,18 @@ export function VoiceScreen({ id, onClose, onType }: { id: string | null; onClos
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.body}>
         {(!job || recording || job.errorCode === 'interrupted') && <View style={s.capture}>
           <Text style={s.timer}>{recording ? `${Math.min(MAX_VOICE_SECONDS, Math.floor(state.durationMillis / 1000))}s` : '30s max'}</Text>
-          <PrimaryButton label={recording ? 'Stop' : 'Record'} disabled={busy} onPress={() => { void (recording ? finish() : record()); }} />
+          <PrimaryButton label={recording ? 'Done' : 'Record'} disabled={busy} onPress={() => { void (recording ? finish() : record()); }} />
         </View>}
         {pending && <View style={s.status}>
           {voicesEnabled && <ActivityIndicator color={colors.protein} />}
           <Text style={s.help}>{!voicesEnabled ? 'Saved · waiting for setup' : job?.errorCode === 'network' ? 'Offline · retrying' : 'Transcribing…'}</Text>
         </View>}
-        {job && !recording && <TextInput value={text} onChangeText={(value) => { dirty.current = true; setText(value); }}
-          multiline maxLength={500} placeholder="Meal · or type instead" accessibilityLabel="Meal transcript" style={s.input} placeholderTextColor={colors.inkLow} />}
-        {job?.state === 'failed' && <Text accessibilityRole="alert" style={s.help}>{errors[job.errorCode ?? 'network'] ?? 'Transcription failed. Type instead.'}</Text>}
+        {job?.transcript && !recording && <TextInput value={text} onChangeText={(value) => { dirty.current = true; setText(value); }}
+          multiline maxLength={500} placeholder="Transcript" accessibilityLabel="Meal transcript" style={s.input} placeholderTextColor={colors.inkLow} />}
+        {job?.state === 'failed' && <Text accessibilityRole="alert" style={s.help}>{errors[job.errorCode ?? 'network'] ?? 'Transcription failed. Retry.'}</Text>}
         {error && <Text accessibilityRole="alert" style={s.help}>{error}</Text>}
         {denied && <Pressable onPress={() => { void Linking.openSettings(); }} accessibilityRole="button" style={s.button}><Text style={s.action}>Settings</Text></Pressable>}
-        {!job && <Pressable onPress={onType} disabled={busy} accessibilityRole="button" style={s.button}><Text style={s.action}>Type instead</Text></Pressable>}
-        {job?.state === 'failed' && job.audioUri && job.durationMs && <Pressable onPress={() => retryVoiceJob(job.id)} accessibilityRole="button" style={s.button}><Text style={s.action}>Retry</Text></Pressable>}
+        {job?.state === 'failed' && job.audioUri && <Pressable onPress={() => { void retry(); }} disabled={busy} accessibilityRole="button" style={s.button}><Text style={s.action}>Retry</Text></Pressable>}
       </ScrollView>
       {job && !recording && <View style={s.footer}>
         <PrimaryButton label="Review" onPress={review} disabled={!text.trim() || busy} />

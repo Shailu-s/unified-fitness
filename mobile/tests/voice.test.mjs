@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { open, repositoryFor } from './sqlite.mjs';
 import { processVoiceJobs, VoiceTransportError } from '../src/lib/voiceWorker.ts';
 import { makeExportDocument } from '../src/lib/exportData.ts';
-import { validateVoiceBytes, validateTranscript, validateRecordingUri } from '../src/lib/voice.ts';
+import { validateVoiceBytes, validateTranscript, validateRecordingUri, validateNativeRecordingUri } from '../src/lib/voice.ts';
 
 const uri = 'file:///documents/Audio/recording-fixture.m4a';
 const now = new Date(2026, 9, 10, 23, 59);
@@ -148,6 +148,29 @@ test('voice migration can be rolled back and retried without touching old meals'
     migration.initialize();
     assert.equal(db.prepare('PRAGMA user_version').get().user_version, 4);
     assert.equal(repository.getMeal(saved.id).name, 'Old meal');
+  } finally { db.close(); }
+});
+
+test('native Expo Go recorder roots are narrowly bounded and other containers/files/traversals stay rejected', () => {
+  const root = 'file:///var/mobile/Containers/Data/Application/ONE/Documents/ExperienceData/%40anonymous%2Funi-fit';
+  const native = 'file:///private/var/mobile/Containers/Data/Application/ONE/Documents/ExpoAudio/recording-ABCDEF01-2345-6789-ABCD-EF0123456789.m4a';
+  validateNativeRecordingUri(native, root);
+  for (const path of [native.replace('/ONE/', '/OTHER/'), native.replace('/ExpoAudio/', '/private/'), native.replace('recording-ABCDEF01-2345-6789-ABCD-EF0123456789', 'passwords'), native.replace('/ExpoAudio/', '/ExpoAudio/../'), native.replace('/ExpoAudio/', '/ExpoAudio/%2e%2e/')]) assert.throws(() => validateNativeRecordingUri(path, root));
+  validateRecordingUri(`${root}/voice-recordings/fixture.m4a`, root);
+});
+
+test('failed finalization preserves the original clip and Retry queues a durable copy without another record', () => {
+  const { db, repository } = open();
+  try {
+    const job = repository.startVoiceRecording(uri, now);
+    repository.failVoiceFinalization(job.id);
+    assert.equal(repository.getVoiceJob(job.id).errorCode, 'finalize_failed');
+    assert.equal(repository.getVoiceJob(job.id).audioUri, uri);
+    const copy = 'file:///documents/voice-recordings/fixture.m4a';
+    repository.queueVoiceRecording(job.id, 6000, now, copy);
+    assert.equal(repository.getVoiceJob(job.id).audioUri, copy);
+    assert.equal(repository.getVoiceJob(job.id).state, 'queued');
+    assert.equal(repository.getVoiceJob(job.id).errorCode, null);
   } finally { db.close(); }
 });
 
