@@ -10,8 +10,8 @@ yarn start
 ```
 
 Checks: `yarn typecheck`, `yarn test`. Tests use Node's built-in SQLite and
-TypeScript stripping (verified on Node 25.6.1). SDK compatibility checks pass;
-physical iOS/Android offline restart checks remain pending. See `../docs/build-plan.md`.
+TypeScript stripping (verified on Node 25.6.1). SDK patch compatibility drift is open;
+physical iOS/Android offline restart checks remain pending. See `../docs/development-plan.md`.
 
 For the first iPhone preview, install Expo Go compatible with SDK 57. Sign in to
 Expo Go and run `yarn expo login` on the Mac using the same Expo account. Keep both

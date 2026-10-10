@@ -1,10 +1,17 @@
 # Unified Fitness
 
-One app replacing three: **Strava-style cardio + Apple-Fitness-style activity rings +
-calorie/macro tracking**. Light gym logging included. Minimal, fast, clutter-free.
+One app replacing four: **Strava-style walk/run recording + Apple-Fitness-style
+activity rings + LLM calorie/macro tracking + Hevy-style gym logging**, plus body
+weight, water, sleep and resting HR/HRV read from the OS health layer. **No social
+features.** Minimal, fast, clutter-free: any screen in ≤ 2 taps, any log in ≤ 3.
 
 Source concept: `unified_fitness_concept.pdf` — read it for context, but **the persona
 and scope below supersede it** (see "Deviations from the PDF").
+
+**Single roadmap and progress tracker: `docs/development-plan.md`** (phases 0-8,
+Must/Cut-line tiers, current evidence and agent execution protocol). Do not create
+or maintain a second competing tracker. The founder reconfirmed the new full-gym
+scope; older cached light-gym rules are superseded.
 
 ## Fixed context (decided with the founder — do not re-litigate without asking)
 
@@ -12,25 +19,32 @@ and scope below supersede it** (see "Deviations from the PDF").
 |---|---|
 | Primary user | Indian IT employee. Walks, tries to stay healthy, goes to the gym ~2-4x/week. **Not** a hardcore athlete. |
 | Market | India first, designed so global is possible later. |
-| Wedge | The **unification itself** — three-in-one dashboard, not beating any single incumbent at its own game. |
-| Gym scope | **Light logging only.** No volume math, no muscle heatmaps, no powerlifter UI. |
-| Monetization | Freemium subscription. Free core tracking; paid tier TBD. |
+| Wedge | The **unification itself** — one dashboard, not beating any single incumbent at its own game. |
+| Gym scope | **Full Hevy-style** (decided 2026-10-10, replaces earlier "light logging"): exercise library, routines, rest timer, previous-performance hints, PRs, 1RM/volume trends, body-part breakdown. No muscle heatmaps or exercise videos in V1. |
+| Cardio scope | **Outdoor walk + run** with live GPS; indoor = manual entry. No cycling/swim in V1. |
+| Rings | Steps, active calories, exercise minutes. No stand ring (not cross-platform). |
+| Extra metrics | Body weight + trend, water, sleep (read-only), resting HR/HRV (read-only). |
+| Wearables | **OS health layer only**: HealthKit (iOS) / Health Connect (Android). Apple Watch, Fitbit, Samsung, Garmin, Mi Band arrive via their companion apps. No vendor cloud APIs or watch apps. Google Fit API is deprecated (closed to new apps; shutdown end-2026) — never use it. |
+| Accounts | **Optional.** Full guest use; sign-in (Apple/Google/email OTP) unlocks backup/restore, sync and billing. |
+| Monetization | Freemium. Free: all manual logging + limited AI estimates/day. Paid: unlimited AI, weekly insights, advanced charts, cloud sync. Price TBD before Phase 7. |
 | Capacity | ~10-15h/week, nights and weekends. This is the binding constraint on all scope. |
 | Platforms | **Both iOS and Android simultaneously.** Founder decision, made against a recommendation to ship Android-first. |
 | Live GPS | **In V1.** Founder decision — "Strava-grade" is core to the pitch; imported-only cardio is not acceptable. |
 | Food data | **LLM estimates everything**, no curated seed DB. Founder decision. Caching is mandatory (see below). |
-| Next complete phase | **Photo capture/estimation is the flagship, with typing fallback, before rings/GPS.** Founder priority. Photo uncertainty stays explicit; no promise of precise calories from images. |
+| Target | **Public store launch ~6 months (≈ 2027-04).** Aggressive; every phase has Must vs Cut-line tiers — ship Must, defer Cut-line. |
 | Goal | Real business, not a portfolio piece. |
 
 ## Deviations from the PDF (deliberate)
 
 - Persona changed from "hybrid athlete" to "IT employee staying healthy." Larger
   market, lower tolerance for complexity.
-- Hevy-style deep strength logging is **out**. Light logging replaces it.
+- Hevy-style strength logging is **in** (founder reversed the earlier "light only"
+  decision on 2026-10-10); muscle heatmaps and video library remain out.
 - The dashboard/unification is the product; logging pillars serve it.
 - Photo-based calorie estimation is treated as unproven and low-trust — text/voice
-  parsing is the primary path. Founder now requires working photo estimation in
-  the first complete nutrition phase alongside text, not deferred until after rings.
+  parsing is the primary path. Founder required working photo estimation in the
+  first complete nutrition phase alongside text; it is now implemented and pending
+  device QA.
 
 ## Working relationship
 
@@ -109,24 +123,25 @@ flag is on with $0.01 conservative per-call reservation (not actual invoice spen
 Mobile dev-only override enables foreground processing; production defaults stay
 off. Do not raise/renew budget without approval. Actual phone correction/offline/
 reopen, Android and broader meal accuracy remain unverified. Photo capture/private
-upload/vision/result-screen code is implemented on the feature branch, with
+upload/vision/result-screen code is merged on main via PR #1, with
 production photo inference gated off until review/deployment. Founder-approved isolated
 nutrition-photo-preview is deployed and enabled with JWT verification and a separate
-preview flag; development client targets it on port 8084. October budget verified
-unchanged at $1 limit/$0.04 reserved; validation checks made no new inference calls.
+preview flag; development client targets it on port 8084. Earlier October validation checked $1 limit/$0.04 reserved without new inference;
+this is historical evidence, not the current balance.
 Founder photo preparation failure reproduced at native hashing boundary and fixed
 by passing Uint8Array rather than ArrayBuffer. Founder now requests minimal photo UI:
 photo with bottom translucent macro overlay; short Edit/Remove/Save actions; no visible
 quantity/portion/assumption prompts. Camera icon now opens a direct expo-camera live view with bottom-right Gallery,
 not a chooser. Photo preparation/privacy/durable draft pipeline is shared.
-Online voice is now implemented on feat/voice-nutrition: type left/camera centre/voice right,
+Online voice is merged on main via PR #1: type left/camera centre/voice right,
 30-second foreground document recording → private editable transcript → same text
 nutrition draft/cache → Save. Founder approved pinned gpt-4o-mini-transcribe-2025-12-15
 and private audio inside the existing $1 cap; isolated voice-transcribe-preview is
 ACTIVE with JWT verification. Voice reserves $0.04 per uncached transcription from
 the same ledger, never a new budget. Two synthetic live runs/cache/cleanup pass but
 transcripts had word errors; real English/Hindi/mixed quality and broader mic reliability remain unverified.
-October latest verified ledger is $1 limit/$0.15 reserved, not invoice spend.
+Last recorded ledger was $1 limit/$0.15 reserved before later phone QA, not
+current remaining allowance or invoice spend; inspect read-only before paid tests.
 Founder iPhone recorder startup failed with custom encoding; SDK HIGH_QUALITY AAC
 preset fixes prepare. Expo Go native audio/experience directory mismatch is fixed
 with narrow native-source validation and project-scoped durable copying. Done replaces
@@ -134,7 +149,10 @@ Stop; duplicate typing on Voice is removed, main typing remains. Founder now rep
 words appear after Done/Retry, not full macro/save/offline/Android or accuracy sign-off.
 Founder requests no visible draft entries: Today shows saved meals only; durable
 unfinished records remain internal/exportable and never count before explicit Save.
-Founder explicitly approves finishing/publishing/merging the cumulative app PR work.
+Cumulative capture PR #1 is merged at application baseline d41c8a9; no open PRs
+remain at the 2026-10-10 evidence checkpoint. We are still in Phase 0: CI/native
+builds/nutrition close-out incomplete. Next coding slice is CI, alongside founder
+unblocking Xcode/Android tools; Phase 1 navigation follows the Phase 0 exit gate.
 114 automated tests/typechecks/bundles pass; camera/gallery/native reliability and
 remaining voice gates pending. No budget increase or extra agent inference in this fix. Expo compatibility checker recommends
 October 6 patches retained pending seven-day age/review. Native photo QA, actual
@@ -148,8 +166,8 @@ Native dev-client setup and
 non-destructive project generation are prepared; native compilation/install stays
 blocked on full Xcode (currently only Command Line Tools) and Android SDK access.
 
-Build sequence and progress: `docs/build-plan.md`. Architecture reasoning:
-`docs/decisions/001-local-first-logging.md`.
+Roadmap, current phase, next slice, verification evidence and device gates:
+`docs/development-plan.md`. Architecture reasoning: `docs/decisions/`.
 
 ## Development and verification
 
@@ -169,7 +187,7 @@ Use existing Yarn 1 lockfile. From `mobile/`:
 
 Bundle checks are not native runtime tests. Physical offline save/edit/force-stop/
 reopen checks are required on both platforms before marking persistence DONE.
-Update the build tracker after each slice; keep unverified device gates unchecked.
+Update development-plan.md after each slice; keep unverified device gates unchecked.
 
 ## Founder testing workflow
 
@@ -180,7 +198,8 @@ until the founder reports it. Keep replies short and actionable.
 
 The founder approved publishing the prior 11 local foundation commits to main.
 Future features use branches and reviewable PRs against main; do not merge or
-push future feature work directly to main. Photo work uses feat/photo-nutrition.
+push future feature work directly to main. The capture work is already merged;
+future slices start fresh branches from main.
 
 Every repository commit must explicitly use both author and committer identity:
 `Shailu-s <srajawat024@gmail.com>`. Set GIT_AUTHOR_NAME/GIT_AUTHOR_EMAIL and
