@@ -155,7 +155,9 @@ builds/nutrition close-out incomplete. Next coding slice is CI, alongside founde
 unblocking Xcode/Android tools; Phase 1 navigation follows the Phase 0 exit gate.
 116 local tests/typechecks/bundles pass after Phase 0 CI contracts. PR CI workflow
 uses read-only permissions, mature SHA-pinned actions, frozen Yarn, disabled AI
-flags and a 116-pass floor. Hosted run/main-green still pending until published.
+flags and a 116-pass floor. Hosted PR #2 run 38055593788 passes; PR merge/main-green
+still pending. Xcode GUI install not started by founder at latest checkpoint;
+Android device unavailable; SDK patches age-blocked until October 13 after 12:12 UTC.
 Camera/gallery/native reliability and
 remaining voice gates pending. No budget increase or extra agent inference in this fix. Expo compatibility checker recommends
 October 6 patches retained pending seven-day age/review. Native photo QA, actual

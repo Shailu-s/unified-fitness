@@ -65,11 +65,12 @@ result for each manual checkpoint; leave unreported gates unchecked.
 | Voice capture/transcript (legacy 3.3) | VERIFY | Founder reports iPhone recording starts and words appear after Done/Retry. Full transcript edit→macros→Save, denial, 30-second stop, background/reopen/offline and Android checks remain. |
 | Native baseline (legacy 2.1) | BLOCKED | Non-destructive projects/dev-client scripts prepared. Full Xcode unavailable in active toolchain; Android toolchain/device access and both installed builds not verified. |
 | Repository integration | DONE | PR #1 merged; code on main, preserved Shailu-s author/committer identities, no open PRs at the evidence checkpoint. |
-| CI | BUILDING | Mobile CI workflow prepared: PR/main/manual triggers, frozen Yarn install, public-config/typecheck/tests with 116-pass baseline, both time zones and both bundles. Local checks pass; actual PR run and CI-green-on-main are not yet recorded. |
+| CI | VERIFY | Mobile CI implemented and actual hosted PR #2 run 38055593788 passes: frozen Yarn, public-config/typecheck, 116-pass TAP floor, both time zones and both bundles. Merge/main-green remains pending; native/SDK/device gates separate. |
 
 **Automated baseline:** 116 tests (114 capture/foundation plus 2 CI contracts),
 TypeScript/config guard, both time zones and both bundles pass locally for the CI
-slice. YAML parses and TAP baseline guard passes; hosted GitHub CI is a separate gate. At the merged code checkpoint, tests passed in Asia/Kolkata and
+slice. YAML/TAP checks pass; hosted PR #2 run 38055593788 also passes. CI on main
+still needs merge/verification. At the merged capture-code checkpoint, tests passed in Asia/Kolkata and
 America/New_York, public-config guard/Deno checks and both iOS/Android JS/Hermes
 bundle exports passed. Native generation/config introspection passed, but none of
 those is a signed native compile/install result. Temporary capture DEBUG logs were
@@ -201,7 +202,7 @@ Weeks are planning estimates, not commitments. Phases overlap where marked.
 
 | Phase | Name | Current state | Weeks | Depends on | Store-blocking? |
 |---|---|---|---|---|---|
-| 0 | Close out nutrition + native build baseline | VERIFY; native baseline BLOCKED, CI BUILDING | 1-3 | — | Yes (native builds) |
+| 0 | Close out nutrition + native build baseline | VERIFY; native baseline BLOCKED, CI PR passes/main pending | 1-3 | — | Yes (native builds) |
 | 1 | Navigation shell + unified Today dashboard (real data contracts) | TODO; existing theme/day/nutrition code reusable | 3-5 | 0 | Yes |
 | 2 | Health layer: rings, steps, sleep, RHR/HRV, weight, water | TODO | 5-9 | 1 | Yes |
 | 3 | Live GPS walk/run | TODO | 9-13 | 0 (native), 2 (health write) | Yes |
@@ -253,7 +254,9 @@ both platforms; finish the open nutrition gates; merge open branches to main.
   setup-node v7.0.0 (not the two-day-old v7.1.0). Read-only permissions, no persisted
   checkout credentials, inference/smoke flags false, no secrets/deployments. A TAP
   guard requires all tests pass and at least the reviewed 116-test baseline. Founder
-  approves publishing the branch/opening a PR; remote verification is still pending.
+  approves publishing the branch/opening a PR. Actual hosted run **38055593788**
+  on **PR #2** passes on 2026-10-10, including both exports. PR remains open;
+  merge was not approved in the publishing checkpoint, so main-green stays pending.
 - **SDK drift is blocked by release age, not ignored:** all three recommended patches
   were published October 6 around 12:11 UTC. Earliest seven-day eligibility for all
   is **October 13 after 12:12 UTC**; do not bypass the age policy/security controls.
@@ -857,7 +860,7 @@ Git history; do not resurrect obsolete chooser/draft-inbox/light-gym workflows.
 | Voice, `788312a` | SQLite v4 recording/jobs, private transcription/prompt-version cache, shared budget/session setup and reviewed text pipeline; 107 tests, isolated Postgres/hosted smoke. Two synthetic clips had word errors. | Audio cleanup/cache transport proof is not real-language accuracy or native microphone proof. |
 | Device fixes, `6012976` | Standard AAC replaces failing custom encoder. Host-native Go audio is validated/copy-persisted into scoped project documents before queue. Done/Retry, no duplicate Type; 114 tests. Founder selects “Words appear” after retest. | Narrow iPhone checkpoint only; full macro Save/offline/Android/quality still pending. Temporary DEBUG logs removed. |
 | Merge/UI, `d41c8a9` | Removed visible draft entries without deleting data. PR #1 cumulative work merged to main via non-forced fast-forward on 2026-10-10; identities preserved, no open PRs. 114 tests in both time zones, typecheck/config guard/bundles. | Merged is not Phase 0 DONE; no new backend deployment/budget increase or agent inference in that merge. |
-| 2026-10-10 Phase 0 CI implementation | Added mature SHA-pinned, read-only/no-secret/no-inference PR verification, TAP test-floor guard and tests; 116 local tests/typecheck/config/time-zone checks/bundles pass. Founder authorizes push/PR, iPhone only available. | Remote CI/main-green and native builds/QA pending; SDK patches not seven days old; Xcode 26.3 GUI steps given; stopped broad Homebrew JDK dependency upgrade before installation. |
+| 2026-10-10 Phase 0 CI, `b070bb2` | Added mature SHA-pinned, read-only/no-secret/no-inference PR verification and 116-pass TAP floor. Local checks and hosted PR #2 run 38055593788 pass (locked install/config/typecheck/tests/time zones/both bundles). Founder authorizes push/PR, iPhone only available; clearer Xcode steps provided when he reports not started. | PR merge/main-green and native install/QA pending; SDK patches blocked by age until October 13 after 12:12 UTC. Homebrew JDK dependency upgrade stopped before installation; checked versions unchanged. |
 | 2026-10-10 roadmap consolidation | Founder confirms expanded gym scope, requests single roadmap/tracker and deletion of the old tracker. Rechecked 114 tests/TypeScript, merged PR/no open PRs and active CLT-only Xcode toolchain. | Documentation-only change; no new feature, native install, CI execution or accuracy result. |
 
 ### Verification commands and recording policy
