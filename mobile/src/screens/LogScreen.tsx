@@ -16,7 +16,7 @@ import type { SavedMeal } from '../types';
 import { colors, eyebrow, fonts, gutter } from '../theme';
 
 export function LogScreen() {
-  const { targets, meals, photoDrafts, voiceJobs, eaten, addMeal, updateMeal, getExportData } = useApp();
+  const { targets, meals, eaten, addMeal, updateMeal, getExportData } = useApp();
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
 
@@ -29,7 +29,6 @@ export function LogScreen() {
   const [resultId, setResultId] = useState<string | null>(null);
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [voiceId, setVoiceId] = useState<string | null>(null);
-  const pendingVoice = voiceJobs.filter((job) => !job.mealId);
   const [cameraOpen, setCameraOpen] = useState(false);
   const exportBusy = useRef(false);
   const performExport = async () => {
@@ -103,14 +102,6 @@ export function LogScreen() {
         {/* Silence, not a divider, separates the day's targets from the day's record. */}
         <View style={[s.meals, { marginTop: height < 720 ? 32 : 66 }]}>
           <ScrollView ref={listRef} showsVerticalScrollIndicator={false} style={s.list}>
-            {(photoDrafts.length > 0 || pendingVoice.length > 0) && <View style={s.drafts}>
-              <Text style={s.mealsHead}>Drafts</Text>
-              {photoDrafts.map((draft, index) => <MealRow key={draft.id} meal={draft} last={index === photoDrafts.length - 1} onPress={() => setResultId(draft.id)} />)}
-              {pendingVoice.map((job) => <Pressable key={job.id} onPress={() => openVoice(job.id)} accessibilityRole="button" style={s.voiceDraft}>
-                <MicIcon color={colors.inkMid} />
-                <Text style={s.actionText}>{job.state === 'ready' ? 'Review voice' : job.state === 'failed' ? 'Voice · retry' : 'Voice draft'}</Text>
-              </Pressable>)}
-            </View>}
             <Text style={s.mealsHead}>Meals</Text>
             {empty ? (
               <View>
@@ -191,8 +182,6 @@ const s = StyleSheet.create({
   meals: { flex: 1, minHeight: 0 },
   mealsHead: { ...eyebrow, letterSpacing: 1.2, marginBottom: 13 },
   list: { flex: 1 },
-  drafts: { marginBottom: 20 },
-  voiceDraft: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 },
 
   emptyLine: { fontFamily: fonts.uiSemi, fontSize: 15, letterSpacing: -0.15, color: colors.ink },
   bottom: { paddingTop: 16, paddingHorizontal: 20, backgroundColor: colors.paper, alignItems: 'center' },

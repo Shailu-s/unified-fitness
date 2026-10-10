@@ -50,3 +50,7 @@ Use the existing camera icon as the entry to native Camera/Gallery/Cancel choice
 ## Direct camera: clarified founder requirement, 2026-10-10
 
 The founder clarifies that the camera must open directly, with Gallery inside the camera view at bottom-right; a pre-camera chooser does not meet the requirement. Use SDK-57 expo-camera 57.0.6 (September 29 release, included in Expo Go) for a small picture-only preview, capture button and Gallery. No video/barcode features. Release the camera when backgrounded, picking from gallery or showing results; gate capture on native readiness. Reuse the existing resize/JPEG scrub/owned-file pipeline for both CameraView shots and system-gallery assets. Persist a durable draft only after processing consent; cancelled consent removes only the prepared app-owned asset, not the original gallery image. Render results inside the same native modal to avoid overlapping presentations. Native camera/gallery/readability gates remain pending.
+
+## No visible draft inbox: founder refinement, 2026-10-10
+
+Remove draft entries from Today and label the result simply Meal. This is a UI simplification, not permission to delete existing unsaved captures or remove SQLite durability. Internal capture drafts/jobs and export remain; only explicit Save adds a meal to history/totals. There is no draft inbox/resume list for abandoned captures, while the active result keeps correction/retry/discard. Do not auto-count an uploaded image or quietly delete old records to simulate this UI change.

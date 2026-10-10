@@ -54,7 +54,7 @@ export function MealResultScreen({ id, onClose, embedded = false }: { id: string
     <>
       <View style={[s.root, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 }]}>
         <View style={s.header}>
-          <Text style={s.title}>{isDraft ? 'Draft' : 'Meal'}</Text>
+          <Text style={s.title}>Meal</Text>
           <Pressable onPress={onClose} accessibilityRole="button" hitSlop={12}><Text style={s.action}>{isDraft ? 'Later' : 'Done'}</Text></Pressable>
         </View>
         <ScrollView contentContainerStyle={s.body}>

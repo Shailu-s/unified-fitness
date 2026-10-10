@@ -34,7 +34,9 @@ test('photo capture creates a reviewable draft and the result screen offers expl
   const result = readFileSync(new URL('../src/screens/MealResultScreen.tsx', import.meta.url), 'utf8');
   const camera = readFileSync(new URL('../src/screens/CameraScreen.tsx', import.meta.url), 'utf8');
   assert.match(camera, /const meal = addPhotoDraft\(/);
-  assert.match(log, />Drafts<\/Text>/);
+  assert.equal(log.includes('photoDrafts.map'), false);
+  assert.equal(log.includes('pendingVoice.map'), false);
+  assert.equal(log.includes('>Drafts</Text>'), false);
   assert.match(camera, /pickMealPhoto\('gallery'\)/);
   assert.match(log, /accessibilityLabel="Add photo from camera or gallery"/);
   assert.match(result, /savePhotoDraft\(id\)/);

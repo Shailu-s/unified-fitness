@@ -132,6 +132,9 @@ preset fixes prepare. Expo Go native audio/experience directory mismatch is fixe
 with narrow native-source validation and project-scoped durable copying. Done replaces
 Stop; duplicate typing on Voice is removed, main typing remains. Founder now reports
 words appear after Done/Retry, not full macro/save/offline/Android or accuracy sign-off.
+Founder requests no visible draft entries: Today shows saved meals only; durable
+unfinished records remain internal/exportable and never count before explicit Save.
+Founder explicitly approves finishing/publishing/merging the cumulative app PR work.
 114 automated tests/typechecks/bundles pass; camera/gallery/native reliability and
 remaining voice gates pending. No budget increase or extra agent inference in this fix. Expo compatibility checker recommends
 October 6 patches retained pending seven-day age/review. Native photo QA, actual
