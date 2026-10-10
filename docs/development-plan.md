@@ -65,10 +65,11 @@ result for each manual checkpoint; leave unreported gates unchecked.
 | Voice capture/transcript (legacy 3.3) | VERIFY | Founder reports iPhone recording starts and words appear after Done/Retry. Full transcript edit→macros→Save, denial, 30-second stop, background/reopen/offline and Android checks remain. |
 | Native baseline (legacy 2.1) | BLOCKED | Non-destructive projects/dev-client scripts prepared. Full Xcode unavailable in active toolchain; Android toolchain/device access and both installed builds not verified. |
 | Repository integration | DONE | PR #1 merged; code on main, preserved Shailu-s author/committer identities, no open PRs at the evidence checkpoint. |
-| CI | TODO | No `.github/workflows` files at inspection. Local verification is not GitHub Actions CI. |
+| CI | BUILDING | Mobile CI workflow prepared: PR/main/manual triggers, frozen Yarn install, public-config/typecheck/tests with 116-pass baseline, both time zones and both bundles. Local checks pass; actual PR run and CI-green-on-main are not yet recorded. |
 
-**Automated baseline:** 114 tests and TypeScript re-run successfully for this docs
-update. At the merged code checkpoint, tests passed in Asia/Kolkata and
+**Automated baseline:** 116 tests (114 capture/foundation plus 2 CI contracts),
+TypeScript/config guard, both time zones and both bundles pass locally for the CI
+slice. YAML parses and TAP baseline guard passes; hosted GitHub CI is a separate gate. At the merged code checkpoint, tests passed in Asia/Kolkata and
 America/New_York, public-config guard/Deno checks and both iOS/Android JS/Hermes
 bundle exports passed. Native generation/config introspection passed, but none of
 those is a signed native compile/install result. Temporary capture DEBUG logs were
@@ -200,7 +201,7 @@ Weeks are planning estimates, not commitments. Phases overlap where marked.
 
 | Phase | Name | Current state | Weeks | Depends on | Store-blocking? |
 |---|---|---|---|---|---|
-| 0 | Close out nutrition + native build baseline | VERIFY; native baseline BLOCKED, CI TODO | 1-3 | — | Yes (native builds) |
+| 0 | Close out nutrition + native build baseline | VERIFY; native baseline BLOCKED, CI BUILDING | 1-3 | — | Yes (native builds) |
 | 1 | Navigation shell + unified Today dashboard (real data contracts) | TODO; existing theme/day/nutrition code reusable | 3-5 | 0 | Yes |
 | 2 | Health layer: rings, steps, sleep, RHR/HRV, weight, water | TODO | 5-9 | 1 | Yes |
 | 3 | Live GPS walk/run | TODO | 9-13 | 0 (native), 2 (health write) | Yes |
@@ -244,6 +245,45 @@ both platforms; finish the open nutrition gates; merge open branches to main.
 - [ ] Set up GitHub Actions CI: `yarn check:config`, `yarn typecheck`, `yarn test`,
       both `expo export` bundles on every PR. Fail PRs that drop below current test
       count without justification.
+
+### 0.1a Current blockers and founder actions (2026-10-10)
+
+- **CI implementation:** `.github/workflows/mobile-ci.yml`, Node 25.6.1/Yarn 1.22.22
+  matching the verified local harness, mature full-SHA-pinned checkout v7.0.1 and
+  setup-node v7.0.0 (not the two-day-old v7.1.0). Read-only permissions, no persisted
+  checkout credentials, inference/smoke flags false, no secrets/deployments. A TAP
+  guard requires all tests pass and at least the reviewed 116-test baseline. Founder
+  approves publishing the branch/opening a PR; remote verification is still pending.
+- **SDK drift is blocked by release age, not ignored:** all three recommended patches
+  were published October 6 around 12:11 UTC. Earliest seven-day eligibility for all
+  is **October 13 after 12:12 UTC**; do not bypass the age policy/security controls.
+  Keep this item unchecked until actual eligible update and checks complete.
+- **iOS:** macOS 15.7.4 arm64, 139 GiB free at inspection, no Xcode.app in Applications.
+  Apple lists Xcode 26.3 as compatible with macOS 15.6+; current Xcode 27 needs
+  macOS 26.6+. Recommend the compatible 26.3 download, not an automatic OS upgrade.
+  Expo SDK 57 has extra scene-lifecycle requirements if choosing Xcode 27 later.
+  See https://developer.apple.com/xcode/system-requirements/ and
+  https://expo.dev/changelog/sdk-57 . This is compatibility research, not a compile.
+- **Founder iPhone steps:** download Xcode 26.3 from
+  https://developer.apple.com/download/all/?q=Xcode using own Apple login; expand/move
+  into Applications; open/accept licence/install iOS components; Settings→Locations
+  select its Command Line Tools; Settings→Accounts add Apple Account/Personal Team;
+  connect/unlock/trust iPhone and enable Developer Mode if prompted. Record iOS
+  version. Licence/login/admin/signing actions remain with founder; do not ask for
+  passwords or buy a membership automatically. Confirm bundle-ID/team ownership
+  before any identifier change.
+- **Android:** founder currently has iPhone only; physical Android remains unavailable.
+  Android Studio/default SDK/JDK paths are absent, adb/sdkmanager unavailable, no Java
+  runtime. Homebrew openjdk@17 attempt proposed 19 shared-library upgrades and was
+  stopped before installation; checked versions unchanged and no JDK/json-c installed.
+  Download caches may exist. No tap-trust/security settings were changed. Prefer a
+  bounded standalone JDK/Android Studio setup under founder review, not broad host
+  upgrades. Owner reviews SDK licences; use a real Android device for final QA.
+- **Installed-device nutrition QA is still blocked.** A generated project/bundle is
+  not an installed test build. Keep Expo Go/data intact: own native apps have a separate
+  sandbox; export existing records for backup and do not promise automatic migration.
+  Once native builds work, run §0.3 and record exact device/OS/build evidence. Use a
+  bundled-JS installed build for standalone offline cold-start proof, not Metro alone.
 
 ### 0.2 Cut-line
 
@@ -817,6 +857,7 @@ Git history; do not resurrect obsolete chooser/draft-inbox/light-gym workflows.
 | Voice, `788312a` | SQLite v4 recording/jobs, private transcription/prompt-version cache, shared budget/session setup and reviewed text pipeline; 107 tests, isolated Postgres/hosted smoke. Two synthetic clips had word errors. | Audio cleanup/cache transport proof is not real-language accuracy or native microphone proof. |
 | Device fixes, `6012976` | Standard AAC replaces failing custom encoder. Host-native Go audio is validated/copy-persisted into scoped project documents before queue. Done/Retry, no duplicate Type; 114 tests. Founder selects “Words appear” after retest. | Narrow iPhone checkpoint only; full macro Save/offline/Android/quality still pending. Temporary DEBUG logs removed. |
 | Merge/UI, `d41c8a9` | Removed visible draft entries without deleting data. PR #1 cumulative work merged to main via non-forced fast-forward on 2026-10-10; identities preserved, no open PRs. 114 tests in both time zones, typecheck/config guard/bundles. | Merged is not Phase 0 DONE; no new backend deployment/budget increase or agent inference in that merge. |
+| 2026-10-10 Phase 0 CI implementation | Added mature SHA-pinned, read-only/no-secret/no-inference PR verification, TAP test-floor guard and tests; 116 local tests/typecheck/config/time-zone checks/bundles pass. Founder authorizes push/PR, iPhone only available. | Remote CI/main-green and native builds/QA pending; SDK patches not seven days old; Xcode 26.3 GUI steps given; stopped broad Homebrew JDK dependency upgrade before installation. |
 | 2026-10-10 roadmap consolidation | Founder confirms expanded gym scope, requests single roadmap/tracker and deletion of the old tracker. Rechecked 114 tests/TypeScript, merged PR/no open PRs and active CLT-only Xcode toolchain. | Documentation-only change; no new feature, native install, CI execution or accuracy result. |
 
 ### Verification commands and recording policy

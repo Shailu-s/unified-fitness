@@ -153,7 +153,10 @@ Cumulative capture PR #1 is merged at application baseline d41c8a9; no open PRs
 remain at the 2026-10-10 evidence checkpoint. We are still in Phase 0: CI/native
 builds/nutrition close-out incomplete. Next coding slice is CI, alongside founder
 unblocking Xcode/Android tools; Phase 1 navigation follows the Phase 0 exit gate.
-114 automated tests/typechecks/bundles pass; camera/gallery/native reliability and
+116 local tests/typechecks/bundles pass after Phase 0 CI contracts. PR CI workflow
+uses read-only permissions, mature SHA-pinned actions, frozen Yarn, disabled AI
+flags and a 116-pass floor. Hosted run/main-green still pending until published.
+Camera/gallery/native reliability and
 remaining voice gates pending. No budget increase or extra agent inference in this fix. Expo compatibility checker recommends
 October 6 patches retained pending seven-day age/review. Native photo QA, actual
 food-image inference and reference-meal evaluation remain required.
